@@ -7,12 +7,28 @@ import {
 } from "@solana/kit";
 import bs58 from "bs58";
 import { validateEnvironment, type AppConfig } from "../config";
+import baseTokens from "../data/base-tokens.json";
+import rwaList from "../data/rwa-v1-list.json";
+
+const MINT_TO_SYMBOL: Record<string, string> = {};
+for (const t of baseTokens) {
+  MINT_TO_SYMBOL[t.address] = t.symbol;
+}
+for (const asset of (rwaList as any).assets ?? []) {
+  for (const token of asset.tokens ?? []) {
+    const mint = token.addresses?.solana ?? token.mint;
+    if (mint && token.symbol) {
+      MINT_TO_SYMBOL[mint] = token.symbol;
+    }
+  }
+}
 
 export class Agent {
   public walletAddress: string;
   private config: AppConfig;
   private rpc: ReturnType<typeof createSolanaRpc>;
   private signer: Awaited<ReturnType<typeof createKeyPairSignerFromPrivateKeyBytes>>;
+
 
   private constructor(walletAddress: string, config: AppConfig, signer: Awaited<ReturnType<typeof createKeyPairSignerFromPrivateKeyBytes>>) {
     this.walletAddress = walletAddress;
@@ -27,6 +43,10 @@ export class Agent {
     const seed = decoded.slice(0, 32);
     const signer = await createKeyPairSignerFromPrivateKeyBytes(seed, false);
     return new Agent(signer.address, config, signer);
+  }
+
+  private resolveSymbol(mint: string): string {
+    return MINT_TO_SYMBOL[mint] || "UNKNOWN";
   }
 
   async wayfindFetch(path: string, params?: Record<string, string>) {
@@ -44,29 +64,39 @@ export class Agent {
     const solResult = await this.rpc.getBalance(this.walletAddress).send();
     const solLamports = Number(solResult.value);
 
-    let tokens: Array<{ mint: string; symbol: string; amount: number; decimals: number }> = [];
-    try {
-      const tokenResult = await this.rpc.getTokenAccountsByOwner(
-        this.walletAddress,
-        { programId: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA" },
-        { encoding: "jsonParsed" }
-      ).send();
-      tokens = tokenResult.value
-        .filter((acc: any) => acc.account.data?.parsed?.info?.tokenAmount?.uiAmount > 0)
-        .map((acc: any) => ({
-          mint: acc.account.data.parsed.info.mint,
-          symbol: acc.account.data.parsed.info.tokenAmount.uiTokenAmount?.symbol || "UNKNOWN",
-          amount: acc.account.data.parsed.info.tokenAmount.uiAmount,
-          decimals: acc.account.data.parsed.info.tokenAmount.decimals,
-        }));
-    } catch {
-      // Token accounts not available on this RPC
+    const allTokens: Array<{ mint: string; symbol: string; amount: number; decimals: number }> = [];
+    const programs = [
+      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", // SPL Token
+      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", // SPL Token 2022
+    ];
+
+    for (const programId of programs) {
+      try {
+        const tokenResult = await this.rpc.getTokenAccountsByOwner(
+          this.walletAddress,
+          { programId },
+          { encoding: "jsonParsed" }
+        ).send();
+        for (const acc of tokenResult.value) {
+          const info = acc.account.data?.parsed?.info;
+          if (info?.tokenAmount?.uiAmount > 0) {
+            allTokens.push({
+              mint: info.mint,
+              symbol: this.resolveSymbol(info.mint),
+              amount: info.tokenAmount.uiAmount,
+              decimals: info.tokenAmount.decimals,
+            });
+          }
+        }
+      } catch {
+        // skip this program
+      }
     }
 
     return {
       solBalance: solLamports / 1_000_000_000,
       solLamports,
-      tokens,
+      tokens: allTokens,
     };
   }
 
