@@ -44,7 +44,7 @@ export class Agent {
   }
 
   static async create(): Promise<Agent> {
-    const config = validateEnvironment();
+    const config = await validateEnvironment();
     const decoded = bs58.decode(config.privateKey);
     const seed = decoded.slice(0, 32);
     const signer = await createKeyPairSignerFromPrivateKeyBytes(seed, false);
