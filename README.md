@@ -27,10 +27,10 @@ npm install -g @tamago-labs/wayfind-mcp
 |----------|----------|---------|-------------|
 | `SOLANA_PRIVATE_KEY` | No* | Auto-generated | Base58-encoded Solana private key |
 | `SOLANA_RPC_URL` | No | `https://api.mainnet-beta.solana.com` | Solana RPC endpoint |
-| `WAYFIND_API_KEY` | No* | Demo default | Wayfind API key (UserProfile ID) — get from [wayfind.click](https://wayfind.click/) dashboard. Omit for demo risk profile |
+| `WAYFIND_API_KEY` | No* | Demo default | Wayfind API key — get from [wayfind.click](https://wayfind.click/) dashboard. Omit for demo risk profile |
 
-*If `SOLANA_PRIVATE_KEY` is not set, a new wallet is generated and saved to `.wallet.json`.
-*`WAYFIND_API_KEY` uses a demo key by default which returns a sample risk profile. For your own risk profile, get your API key from the Wayfind dashboard.
+* If `SOLANA_PRIVATE_KEY` is not set, a new wallet is generated and saved to `.wallet.json`.
+* `WAYFIND_API_KEY` uses a demo key by default which returns a sample risk profile. For your own risk profile, get your API key from the Wayfind dashboard.
 
 ### OpenCode
 
