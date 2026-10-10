@@ -2,7 +2,7 @@
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { SolanaMcpTools } from "./mcp";
+import { McpTools } from "./mcp";
 import { Agent } from "./agent";
 
 function createMcpServer(agent: Agent) {
@@ -11,7 +11,7 @@ function createMcpServer(agent: Agent) {
     version: "0.1.0",
   });
 
-  for (const [_key, tool] of Object.entries(SolanaMcpTools)) {
+  for (const [_key, tool] of Object.entries(McpTools)) {
     server.tool(tool.name, tool.description, tool.schema, async (params: any): Promise<any> => {
       try {
         const result = await tool.handler(agent, params);
