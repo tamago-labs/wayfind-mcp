@@ -2,8 +2,8 @@ import { z } from "zod";
 import { Agent } from "../../agent";
 import type { McpTool } from "../../types";
 
-export const WayfindGetSwapQuoteTool: McpTool = {
-  name: "wayfind_get_swap_quote",
+export const SolanaGetSwapQuoteTool: McpTool = {
+  name: "solana_get_swap_quote",
   description: "Get a swap quote from OKX DEX for a token pair on Solana",
   schema: {
     fromSymbol: z.string().describe("Symbol of the token to swap from (e.g., 'SOL', 'USDC')"),
