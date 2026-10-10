@@ -9,6 +9,7 @@ import bs58 from "bs58";
 import { validateEnvironment, type AppConfig } from "../config";
 import baseTokens from "../data/base-tokens.json";
 import rwaList from "../data/rwa-v1-list.json";
+import preIpoList from "../data/pre-ipo-list.json";
 
 const MINT_TO_SYMBOL: Record<string, string> = {};
 for (const t of baseTokens) {
@@ -20,6 +21,11 @@ for (const asset of (rwaList as any).assets ?? []) {
     if (mint && token.symbol) {
       MINT_TO_SYMBOL[mint] = token.symbol;
     }
+  }
+}
+for (const asset of (preIpoList as any).assets ?? []) {
+  if (asset.mint && asset.symbol) {
+    MINT_TO_SYMBOL[asset.mint] = asset.symbol;
   }
 }
 
