@@ -2,14 +2,16 @@
 
 ![NPM Version](https://img.shields.io/npm/v/@tamago-labs/wayfind-mcp)
 
-**Wayfind MCP** is a Model Context Protocol (MCP) server for the Wayfind AI risk intelligence platform. It provides multi-chain wallet operations, tokenized stock data, risk analysis, and OKX DEX swap integration across **Solana** and **EVM** chains.
+**Wayfind MCP** is a Model Context Protocol (MCP) server for the Wayfind AI risk intelligence platform. It provides multi-chain wallet operations, token transfers, tokenized stock data, risk analysis, and OKX DEX swap integration across **Solana** and **EVM** chains.
 
 ## Features
 
-- **10 MCP tools** covering wallet management, market data, risk analysis, and token swaps
+- **9 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, and token swaps
 - **Multi-chain support** — single encrypted seed derives both Solana and EVM keypairs
+- **Multi-chain balances** — query SOL + SPL tokens, ETH/native + ERC-20 across 10 chains
+- **Multi-chain transfers** — send native tokens and SPL/ERC-20 tokens to any address
 - **OKX DEX integration** for swap quotes and end-to-end token swaps (get instruction → sign → send)
-- **Tokenized stock data** from Wayfind API — prices, market overview, pre-IPO markets
+- **Tokenized stock data** from Wayfind API — prices, market overview
 - **Risk portfolio analysis** — user risk profiles with factor breakdowns
 - **Encrypted wallet** — seed encrypted at rest using PBKDF2-SHA256 (100k iterations) + libsodium secretbox
 - **BIP39 mnemonic backup** — 12-word mnemonic stored in `.wallet.json` for recovery
@@ -43,14 +45,14 @@ The server uses built-in RPC pools per network (set via `WAYFIND_NETWORK`, defau
 |-------|-----|
 | Solana | `api.devnet.solana.com` |
 | Arc | `rpc.testnet.arc.io` |
-| Ethereum | `ethereum-sepolia.gateway.tatum.io` |
-| Base | `sepolia.base.org` |
+| Ethereum | `rpc.sepolia.org`, `ethereum-sepolia-rpc.publicnode.com` |
+| Base | `sepolia.base.org`, `base-sepolia-rpc.publicnode.com` |
 
 **Mainnet:**
 
 | Chain | RPC |
 |-------|-----|
-| Solana | `api.mainnet-beta.solana.com`, `rpc.ankr.com/solana` |
+| Solana | `api.mainnet-beta.solana.com` |
 | Arc | `rpc.mainnet.arc.io` |
 | Ethereum | `singapore.rpc.blxrbdn.com`, `0xrpc.io/eth` |
 | Base | `mainnet.base.org`, `8453.rpc.thirdweb.com` |
@@ -142,14 +144,20 @@ Add to `~/.config/opencode/opencode.jsonc`:
 
 ## Available Tools
 
-### Wallet Operations
+### Wallet & Balances
 
 | Tool Name | Description | Example Prompt |
 |-----------|-------------|----------------|
 | `get_wallet_address` | Get wallet addresses for all chains on the selected network | "What are my wallet addresses?" |
-| `solana_get_balance` | Get SOL and SPL token balances with symbol resolution | "Show my Solana balances" |
+| `get_balances` | Get native and token balances for a specific chain (supports custom wallet address) | "Show my Solana balances" |
+
+### Transfers & Swaps
+
+| Tool Name | Description | Example Prompt |
+|-----------|-------------|----------------|
+| `send_tokens` | Send native tokens and SPL/ERC-20 tokens to any address. Auto-creates token accounts on Solana. | "Send 1 USDC to 0xABC..." |
 | `solana_get_swap_quote` | Get an OKX DEX swap quote for a token pair | "How much USDC for 1 SOL?" |
-| `solana_swap_tokens` | Swap tokens on Solana via OKX DEX (signs and sends) | "Swap 0.1 SOL to USDC" |
+| `solana_swap_tokens` | Swap tokens on Solana via OKX DEX (signs and sends, mainnet only) | "Swap 0.1 SOL to USDC" |
 
 ### Market Data
 
@@ -158,7 +166,6 @@ Add to `~/.config/opencode/opencode.jsonc`:
 | `wayfind_get_tokens` | List all tokenized stocks with prices | "Show me all tokenized stocks" |
 | `wayfind_get_tokenized_stocks` | Get all tokenized versions of a stock ticker across blockchains | "Get all AAPL tokens" |
 | `wayfind_get_market_overview` | Get market stats: total cap, volume, gainers, losers, trending | "Show market overview" |
-| `wayfind_get_pre_ipo` | List pre-IPO markets with mark prices and valuations | "Show pre-IPO markets" |
 
 ### Risk Analysis
 
@@ -176,24 +183,29 @@ mcp/
 ├── .gitignore
 └── src/
     ├── index.ts              # MCP server bootstrap
-    ├── config.ts             # Encrypted wallet: PBKDF2 + libsodium secretbox + BIP39
+    ├── config.ts             # Encrypted wallet: PBKDF2 + libsodium secretbox + BIP39, multi-chain RPCs
     ├── types.ts              # McpTool interface
     ├── agent/
-    │   └── index.ts          # Agent class: RPC client, multi-chain signer, symbol resolution
+    │   └── index.ts          # Agent class: multi-chain RPC, signer, balance queries, transfers, symbol resolution
+    ├── data/
+    │   ├── base-tokens.json       # Common token list (Solana mainnet + devnet)
+    │   ├── rwa-v1-list.json       # RWA/tokenized stock data
+    │   ├── pre-ipo-list.json      # Pre-IPO token data
+    │   └── chains/                # Per-chain EVM token lists (mainnet + testnet)
     └── mcp/
         ├── index.ts                # Aggregates all tools
-        ├── shared/                 # Shared cross-chain tools
-        │   └── get_wallet_address_tool.ts
-        ├── solana/                 # Solana wallet + swap tools
-        │   ├── get_balance_tool.ts
+        ├── shared/                 # Cross-chain tools
+        │   ├── get_wallet_address_tool.ts
+        │   ├── get_balances_tool.ts
+        │   └── send_tokens_tool.ts
+        ├── solana/                 # Solana-specific tools
         │   ├── get_swap_quote_tool.ts
         │   └── swap_tokens_tool.ts
         └── wayfind/                # Wayfind API tools
             ├── get_tokens_tool.ts
             ├── get_tokenized_stocks_tool.ts
             ├── get_risk_profile_tool.ts
-            ├── get_market_overview_tool.ts
-            └── get_pre_ipo_tool.ts
+            └── get_market_overview_tool.ts
 ```
 
 ## Wallet Security
@@ -217,11 +229,12 @@ The wallet seed is encrypted at rest using Node.js crypto + sodium-native:
 | Package | Version | Purpose |
 |---------|---------|---------|
 | `@modelcontextprotocol/sdk` | ^1.10.2 | MCP server + StdioServerTransport |
-| `@solana/kit` | ^2.3.0 | Solana SDK (RPC, keypairs, transactions) |
+| `@solana/kit` | ^3.0.3 | Solana SDK (RPC, keypairs, transactions) |
 | `sodium-native` | ^4.3.1 | Encryption (libsodium secretbox) |
 | `bip39` | ^3.1.0 | BIP39 mnemonic generation |
 | `ethers` | ^6.17.0 | EVM wallet derivation |
 | `bs58` | ^6.0.0 | Base58 encoding |
+| `ws` | ^8.22.0 | WebSocket RPC subscriptions |
 | `zod` | ^3.24.3 | Tool parameter schemas |
 
 ## Building
