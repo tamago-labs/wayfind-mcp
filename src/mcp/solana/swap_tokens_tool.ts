@@ -1,10 +1,11 @@
 import { z } from "zod";
 import { Agent } from "../../agent";
 import type { McpTool } from "../../types";
+import { getNetwork } from "../../config";
 
 export const SolanaSwapTokensTool: McpTool = {
   name: "solana_swap_tokens",
-  description: "Swap tokens on Solana via OKX DEX. Gets swap instruction, signs with private key, and sends the transaction. Returns the transaction signature.",
+  description: "Swap tokens on Solana via OKX DEX. Gets swap instruction, signs with private key, and sends the transaction. Returns the transaction signature. Only available on mainnet.",
   schema: {
     fromSymbol: z.string().describe("Symbol of the token to swap from (e.g., 'SOL', 'USDC')"),
     toSymbol: z.string().describe("Symbol of the token to swap to (e.g., 'SOL', 'USDC')"),
@@ -12,6 +13,11 @@ export const SolanaSwapTokensTool: McpTool = {
     slippagePercent: z.string().optional().describe("Slippage tolerance percentage (default: 0.5)"),
   },
   handler: async (agent: Agent, input: Record<string, any>) => {
+    if (getNetwork() !== "mainnet") {
+      return {
+        error: "solana_swap_tokens is only available on mainnet. Set WAYFIND_NETWORK=mainnet to enable swapping.",
+      };
+    }
     return agent.swapTokens({
       fromSymbol: input.fromSymbol,
       toSymbol: input.toSymbol,
