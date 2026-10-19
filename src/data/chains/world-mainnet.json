@@ -1,0 +1,11 @@
+{
+  "chain": "world",
+  "network": "mainnet",
+  "chainId": 480,
+  "nativeCurrency": { "symbol": "ETH", "name": "Ether", "decimals": 18 },
+  "tokens": [
+    { "symbol": "USDC", "name": "USD Coin", "decimals": 6, "address": "0x79A02482a880bcE3F13E09Da970dC34dB4Cd24D1" },
+    { "symbol": "WETH", "name": "Wrapped Ether", "decimals": 18, "address": "0x4200000000000000000000000000000000000006" },
+    { "symbol": "WLD", "name": "Worldcoin", "decimals": 18, "address": "0x2cfc85d8e48f8eab294be644d9e25c3030863003" }
+  ]
+}

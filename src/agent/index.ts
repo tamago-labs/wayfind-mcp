@@ -5,28 +5,43 @@ import {
   getTransactionDecoder,
   getTransactionEncoder,
 } from "@solana/kit";
-import { validateEnvironment, type AppConfig } from "../config";
-import baseTokens from "../data/base-tokens.json";
-import rwaList from "../data/rwa-v1-list.json";
-import preIpoList from "../data/pre-ipo-list.json";
+import bs58 from "bs58";
+import { JsonRpcProvider, Contract, formatUnits, isAddress } from "ethers";
+import { readFileSync } from "fs";
+import { join } from "path";
+import { validateEnvironment, type AppConfig, getNetwork, getSupportedChains } from "../config";
 
-const MINT_TO_SYMBOL: Record<string, string> = {};
-for (const t of baseTokens) {
-  MINT_TO_SYMBOL[t.address] = t.symbol;
+interface ChainToken {
+  symbol: string;
+  name: string;
+  decimals: number;
+  address: string;
 }
-for (const asset of (rwaList as any).assets ?? []) {
-  for (const token of asset.tokens ?? []) {
-    const mint = token.addresses?.solana ?? token.mint;
-    if (mint && token.symbol) {
-      MINT_TO_SYMBOL[mint] = token.symbol;
-    }
+
+interface ChainData {
+  chain: string;
+  network: string;
+  chainId: number;
+  nativeCurrency: { symbol: string; name: string; decimals: number };
+  tokens: ChainToken[];
+}
+
+function loadChainData(network: string): ChainData[] {
+  const chains = ["ethereum", "base", "arbitrum", "polygon", "avalanche", "optimism", "world", "sei", "arc"];
+  const result: ChainData[] = [];
+  for (const chain of chains) {
+    try {
+      const file = join(process.cwd(), "src", "data", "chains", `${chain}-${network}.json`);
+      const data = JSON.parse(readFileSync(file, "utf-8"));
+      if (data.tokens.length > 0) {
+        result.push(data);
+      }
+    } catch {}
   }
+  return result;
 }
-for (const asset of (preIpoList as any).assets ?? []) {
-  if (asset.mint && asset.symbol) {
-    MINT_TO_SYMBOL[asset.mint] = asset.symbol;
-  }
-}
+
+const ERC20_BALANCE_ABI = ["function balanceOf(address) view returns (uint256)"];
 
 export class Agent {
   public solanaWalletAddress: string;
@@ -34,6 +49,7 @@ export class Agent {
   private config: AppConfig;
   private rpc: ReturnType<typeof createSolanaRpc>;
   private signer: Awaited<ReturnType<typeof createKeyPairSignerFromPrivateKeyBytes>>;
+  private chainData: Record<string, ChainData> = {};
 
   private constructor(solanaAddress: string, evmAddress: string, config: AppConfig, signer: Awaited<ReturnType<typeof createKeyPairSignerFromPrivateKeyBytes>>) {
     this.solanaWalletAddress = solanaAddress;
@@ -41,15 +57,17 @@ export class Agent {
     this.config = config;
     this.signer = signer;
     this.rpc = createSolanaRpc(config.solanaRpcUrl);
+
+    const network = getNetwork();
+    const chains = loadChainData(network);
+    for (const c of chains) {
+      this.chainData[c.chain] = c;
+    }
   }
 
   static async create(): Promise<Agent> {
     const config = await validateEnvironment();
     return new Agent(config.solanaPublicKey, config.evmAddress, config, config.solanaSigner);
-  }
-
-  private resolveSymbol(mint: string): string {
-    return MINT_TO_SYMBOL[mint] || "UNKNOWN";
   }
 
   async wayfindFetch(path: string, params?: Record<string, string>) {
@@ -63,43 +81,101 @@ export class Agent {
     return res.json();
   }
 
-  async getBalance() {
-    const solResult = await this.rpc.getBalance(this.solanaWalletAddress).send();
-    const solLamports = Number(solResult.value);
+  async getBalances(targetChain?: string) {
+    const network = getNetwork();
+    const supported = getSupportedChains(network);
 
-    const allTokens: Array<{ mint: string; symbol: string; amount: number; decimals: number }> = [];
-    const programs = [
-      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA", // SPL Token
-      "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb", // SPL Token 2022
-    ];
-
-    for (const programId of programs) {
-      try {
-        const tokenResult = await this.rpc.getTokenAccountsByOwner(
-          this.solanaWalletAddress,
-          { programId },
-          { encoding: "jsonParsed" }
-        ).send();
-        for (const acc of tokenResult.value) {
-          const info = acc.account.data?.parsed?.info;
-          if (info?.tokenAmount?.uiAmount > 0) {
-            allTokens.push({
-              mint: info.mint,
-              symbol: this.resolveSymbol(info.mint),
-              amount: info.tokenAmount.uiAmount,
-              decimals: info.tokenAmount.decimals,
-            });
-          }
-        }
-      } catch {
-        // skip this program
+    if (targetChain) {
+      const chain = targetChain.toLowerCase();
+      if (!supported.includes(chain)) {
+        return {
+          error: `Unsupported chain '${targetChain}' for network '${network}'. Supported: ${supported.join(", ")}`,
+        };
       }
+      return { network, chains: { [chain]: await this.queryChain(chain) } };
+    }
+
+    const chains: Record<string, any> = {};
+    for (const chainName of supported) {
+      const result = await this.queryChain(chainName);
+      if (result) chains[chainName] = result;
+    }
+    return { network, chains };
+  }
+
+  private async queryChain(chainName: string): Promise<any> {
+    if (chainName === "solana") {
+      const solResult = await this.rpc.getBalance(this.solanaWalletAddress).send();
+      const solLamports = Number(solResult.value);
+
+      const allTokens: Array<{ mint: string; symbol: string; amount: number; decimals: number }> = [];
+      const programs = [
+        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+        "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+      ];
+
+      for (const programId of programs) {
+        try {
+          const tokenResult = await this.rpc.getTokenAccountsByOwner(
+            this.solanaWalletAddress,
+            { programId },
+            { encoding: "jsonParsed" }
+          ).send();
+          for (const acc of tokenResult.value) {
+            const info = acc.account.data?.parsed?.info;
+            if (info?.tokenAmount?.uiAmount > 0) {
+              allTokens.push({
+                mint: info.mint,
+                symbol: info.tokenAmount.uiTokenAmount?.symbol || "UNKNOWN",
+                amount: info.tokenAmount.uiAmount,
+                decimals: info.tokenAmount.decimals,
+              });
+            }
+          }
+        } catch {}
+      }
+
+      const network = getNetwork();
+      return {
+        chainId: network === "mainnet" ? 101 : 103,
+        native: { symbol: "SOL", balance: solLamports / 1_000_000_000, lamports: solLamports },
+        tokens: allTokens,
+      };
+    }
+
+    const chainInfo = this.chainData[chainName];
+    if (!chainInfo) return null;
+
+    const rpcUrl = this.config.evmRpcUrls[chainName];
+    if (!rpcUrl) return null;
+
+    const provider = new JsonRpcProvider(rpcUrl);
+
+    const nativeBalance = await provider.getBalance(this.evmWalletAddress);
+    const nativeFormatted = formatUnits(nativeBalance, chainInfo.nativeCurrency.decimals);
+
+    const tokenBalances: Array<{ address: string; symbol: string; name: string; balance: string; decimals: number }> = [];
+    for (const token of chainInfo.tokens) {
+      if (!isAddress(token.address)) continue;
+      try {
+        const contract = new Contract(token.address, ERC20_BALANCE_ABI, provider);
+        const bal = await contract.balanceOf(this.evmWalletAddress);
+        if (bal > 0n) {
+          tokenBalances.push({
+            address: token.address,
+            symbol: token.symbol,
+            name: token.name,
+            balance: formatUnits(bal, token.decimals),
+            decimals: token.decimals,
+          });
+        }
+      } catch {}
     }
 
     return {
-      solBalance: solLamports / 1_000_000_000,
-      solLamports,
-      tokens: allTokens,
+      chainId: chainInfo.chainId,
+      native: { symbol: chainInfo.nativeCurrency.symbol, balance: nativeFormatted },
+      tokens: tokenBalances,
     };
   }
 

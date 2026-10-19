@@ -70,6 +70,12 @@ export function getNetwork(): Network {
   return "testnet";
 }
 
+export function getSupportedChains(network?: Network): string[] {
+  const net = network ?? getNetwork();
+  const chains = ["solana", ...Object.keys(RPC_POOLS[net].evm)];
+  return chains;
+}
+
 function pickRpc(list: string[]): string {
   const valid = list.filter(url => url.length > 0);
   if (valid.length === 0) throw new Error("No RPC URL configured for this chain");

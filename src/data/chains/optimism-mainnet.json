@@ -1,0 +1,12 @@
+{
+  "chain": "optimism",
+  "network": "mainnet",
+  "chainId": 10,
+  "nativeCurrency": { "symbol": "ETH", "name": "Ether", "decimals": 18 },
+  "tokens": [
+    { "symbol": "USDC", "name": "USD Coin", "decimals": 6, "address": "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85" },
+    { "symbol": "USDT", "name": "Tether USD", "decimals": 6, "address": "0x94b008aA00579c1307B0EF2c499aD98a8ce58e58" },
+    { "symbol": "WETH", "name": "Wrapped Ether", "decimals": 18, "address": "0x4200000000000000000000000000000000000006" },
+    { "symbol": "OP", "name": "Optimism", "decimals": 18, "address": "0x4200000000000000000000000000000000000042" }
+  ]
+}

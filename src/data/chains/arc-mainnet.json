@@ -1,0 +1,12 @@
+{
+  "chain": "arc",
+  "network": "mainnet",
+  "chainId": 5042,
+  "nativeCurrency": { "symbol": "ARC", "name": "Arc", "decimals": 18 },
+  "tokens": [
+    { "symbol": "USDC", "name": "USD Coin", "decimals": 6, "address": "0x3600000000000000000000000000000000000000" },
+    { "symbol": "EURC", "name": "Euro Coin", "decimals": 6, "address": "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1" },
+    { "symbol": "cirBTC", "name": "Circle Wrapped Bitcoin", "decimals": 8, "address": "0x171A4217b86A807A64eB94757Db6849fb4bDbAA0" },
+    { "symbol": "WETH", "name": "Wrapped Ether", "decimals": 18, "address": "0x128cC466B61f542da60c70e3aA11c10e19B84EDB" }
+  ]
+}

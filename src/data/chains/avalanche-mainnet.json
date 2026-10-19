@@ -1,0 +1,10 @@
+{
+  "chain": "avalanche",
+  "network": "mainnet",
+  "chainId": 43114,
+  "nativeCurrency": { "symbol": "AVAX", "name": "Avalanche", "decimals": 18 },
+  "tokens": [
+    { "symbol": "USDC", "name": "USD Coin", "decimals": 6, "address": "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E" },
+    { "symbol": "USDT", "name": "Tether USD", "decimals": 6, "address": "0x9702230A8Ea53601f5cD2dc00fDBc13d4dF4A8c7" }
+  ]
+}
