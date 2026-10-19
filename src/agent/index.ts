@@ -5,7 +5,6 @@ import {
   getTransactionDecoder,
   getTransactionEncoder,
 } from "@solana/kit";
-import bs58 from "bs58";
 import { validateEnvironment, type AppConfig } from "../config";
 import baseTokens from "../data/base-tokens.json";
 import rwaList from "../data/rwa-v1-list.json";
@@ -30,25 +29,23 @@ for (const asset of (preIpoList as any).assets ?? []) {
 }
 
 export class Agent {
-  public walletAddress: string;
+  public solanaWalletAddress: string;
+  public evmWalletAddress: string;
   private config: AppConfig;
   private rpc: ReturnType<typeof createSolanaRpc>;
   private signer: Awaited<ReturnType<typeof createKeyPairSignerFromPrivateKeyBytes>>;
 
-
-  private constructor(walletAddress: string, config: AppConfig, signer: Awaited<ReturnType<typeof createKeyPairSignerFromPrivateKeyBytes>>) {
-    this.walletAddress = walletAddress;
+  private constructor(solanaAddress: string, evmAddress: string, config: AppConfig, signer: Awaited<ReturnType<typeof createKeyPairSignerFromPrivateKeyBytes>>) {
+    this.solanaWalletAddress = solanaAddress;
+    this.evmWalletAddress = evmAddress;
     this.config = config;
     this.signer = signer;
-    this.rpc = createSolanaRpc(config.rpcUrl);
+    this.rpc = createSolanaRpc(config.solanaRpcUrl);
   }
 
   static async create(): Promise<Agent> {
     const config = await validateEnvironment();
-    const decoded = bs58.decode(config.privateKey);
-    const seed = decoded.slice(0, 32);
-    const signer = await createKeyPairSignerFromPrivateKeyBytes(seed, false);
-    return new Agent(signer.address, config, signer);
+    return new Agent(config.solanaPublicKey, config.evmAddress, config, config.solanaSigner);
   }
 
   private resolveSymbol(mint: string): string {
@@ -67,7 +64,7 @@ export class Agent {
   }
 
   async getBalance() {
-    const solResult = await this.rpc.getBalance(this.walletAddress).send();
+    const solResult = await this.rpc.getBalance(this.solanaWalletAddress).send();
     const solLamports = Number(solResult.value);
 
     const allTokens: Array<{ mint: string; symbol: string; amount: number; decimals: number }> = [];
@@ -79,7 +76,7 @@ export class Agent {
     for (const programId of programs) {
       try {
         const tokenResult = await this.rpc.getTokenAccountsByOwner(
-          this.walletAddress,
+          this.solanaWalletAddress,
           { programId },
           { encoding: "jsonParsed" }
         ).send();
@@ -111,7 +108,7 @@ export class Agent {
       fromSymbol: input.fromSymbol,
       toSymbol: input.toSymbol,
       amount: input.amount,
-      userWalletAddress: this.walletAddress,
+      userWalletAddress: this.solanaWalletAddress,
       slippagePercent: input.slippagePercent,
     });
 
