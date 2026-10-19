@@ -10,6 +10,27 @@ import { JsonRpcProvider, Contract, formatUnits, isAddress } from "ethers";
 import { readFileSync } from "fs";
 import { join } from "path";
 import { validateEnvironment, type AppConfig, getNetwork, getSupportedChains } from "../config";
+import baseTokens from "../data/base-tokens.json";
+import rwaList from "../data/rwa-v1-list.json";
+import preIpoList from "../data/pre-ipo-list.json";
+
+const MINT_TO_SYMBOL: Record<string, string> = {};
+for (const t of baseTokens as any[]) {
+  MINT_TO_SYMBOL[t.address] = t.symbol;
+}
+for (const asset of (rwaList as any).assets ?? []) {
+  for (const token of asset.tokens ?? []) {
+    const mint = token.addresses?.solana ?? token.mint;
+    if (mint && token.symbol) {
+      MINT_TO_SYMBOL[mint] = token.symbol;
+    }
+  }
+}
+for (const asset of (preIpoList as any).assets ?? []) {
+  if (asset.mint && asset.symbol) {
+    MINT_TO_SYMBOL[asset.mint] = asset.symbol;
+  }
+}
 
 interface ChainToken {
   symbol: string;
@@ -81,9 +102,10 @@ export class Agent {
     return res.json();
   }
 
-  async getBalances(targetChain?: string) {
+  async getBalances(targetChain?: string, walletAddress?: string) {
     const network = getNetwork();
     const supported = getSupportedChains(network);
+    const address = walletAddress || undefined;
 
     if (targetChain) {
       const chain = targetChain.toLowerCase();
@@ -92,23 +114,28 @@ export class Agent {
           error: `Unsupported chain '${targetChain}' for network '${network}'. Supported: ${supported.join(", ")}`,
         };
       }
-      return { network, chains: { [chain]: await this.queryChain(chain) } };
+      return { network, chains: { [chain]: await this.queryChain(chain, address) } };
     }
 
     const chains: Record<string, any> = {};
     for (const chainName of supported) {
-      const result = await this.queryChain(chainName);
+      const result = await this.queryChain(chainName, address);
       if (result) chains[chainName] = result;
     }
     return { network, chains };
   }
 
-  private async queryChain(chainName: string): Promise<any> {
+  private async queryChain(chainName: string, walletAddress?: string): Promise<any> {
+    const network = getNetwork();
+    const address = walletAddress || this.evmWalletAddress;
+
     if (chainName === "solana") {
-      const solResult = await this.rpc.getBalance(this.solanaWalletAddress).send();
+      const chainId = network === "mainnet" ? 101 : 103;
+      const solAddr = walletAddress || this.solanaWalletAddress;
+      const solResult = await this.rpc.getBalance(solAddr).send();
       const solLamports = Number(solResult.value);
 
-      const allTokens: Array<{ mint: string; symbol: string; amount: number; decimals: number }> = [];
+      const tokens: Array<{ address: string; symbol: string; name: string; balance: string; decimals: number }> = [];
       const programs = [
         "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
         "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
@@ -117,17 +144,19 @@ export class Agent {
       for (const programId of programs) {
         try {
           const tokenResult = await this.rpc.getTokenAccountsByOwner(
-            this.solanaWalletAddress,
+            solAddr,
             { programId },
             { encoding: "jsonParsed" }
           ).send();
           for (const acc of tokenResult.value) {
             const info = acc.account.data?.parsed?.info;
             if (info?.tokenAmount?.uiAmount > 0) {
-              allTokens.push({
-                mint: info.mint,
-                symbol: info.tokenAmount.uiTokenAmount?.symbol || "UNKNOWN",
-                amount: info.tokenAmount.uiAmount,
+              const symbol = MINT_TO_SYMBOL[info.mint] || info.tokenAmount.uiTokenAmount?.symbol || "UNKNOWN";
+              tokens.push({
+                address: info.mint,
+                symbol,
+                name: symbol,
+                balance: info.tokenAmount.uiAmount.toString(),
                 decimals: info.tokenAmount.decimals,
               });
             }
@@ -135,11 +164,10 @@ export class Agent {
         } catch {}
       }
 
-      const network = getNetwork();
       return {
-        chainId: network === "mainnet" ? 101 : 103,
-        native: { symbol: "SOL", balance: solLamports / 1_000_000_000, lamports: solLamports },
-        tokens: allTokens,
+        chainId,
+        native: { symbol: "SOL", balance: (solLamports / 1_000_000_000).toString(), lamports: solLamports },
+        tokens,
       };
     }
 
@@ -150,18 +178,17 @@ export class Agent {
     if (!rpcUrl) return null;
 
     const provider = new JsonRpcProvider(rpcUrl);
-
-    const nativeBalance = await provider.getBalance(this.evmWalletAddress);
+    const nativeBalance = await provider.getBalance(address);
     const nativeFormatted = formatUnits(nativeBalance, chainInfo.nativeCurrency.decimals);
 
-    const tokenBalances: Array<{ address: string; symbol: string; name: string; balance: string; decimals: number }> = [];
+    const tokens: Array<{ address: string; symbol: string; name: string; balance: string; decimals: number }> = [];
     for (const token of chainInfo.tokens) {
       if (!isAddress(token.address)) continue;
       try {
         const contract = new Contract(token.address, ERC20_BALANCE_ABI, provider);
-        const bal = await contract.balanceOf(this.evmWalletAddress);
+        const bal = await contract.balanceOf(address);
         if (bal > 0n) {
-          tokenBalances.push({
+          tokens.push({
             address: token.address,
             symbol: token.symbol,
             name: token.name,
@@ -172,11 +199,16 @@ export class Agent {
       } catch {}
     }
 
-    return {
+    const result: any = {
       chainId: chainInfo.chainId,
-      native: { symbol: chainInfo.nativeCurrency.symbol, balance: nativeFormatted },
-      tokens: tokenBalances,
+      tokens,
     };
+
+    if (chainName !== "arc") {
+      result.native = { symbol: chainInfo.nativeCurrency.symbol, balance: nativeFormatted };
+    }
+
+    return result;
   }
 
   async swapTokens(input: { fromSymbol: string; toSymbol: string; amount: string; slippagePercent: string }) {

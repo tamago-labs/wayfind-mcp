@@ -22,14 +22,13 @@ const RPC_POOLS: Record<Network, RpcPool> = {
     ],
     evm: {
       arc: ["https://rpc.testnet.arc.io"],
-      ethereum: ["https://ethereum-sepolia.gateway.tatum.io"],
-      base: ["https://sepolia.base.org"],
+      ethereum: ["https://rpc.sepolia.org", "https://ethereum-sepolia-rpc.publicnode.com"],
+      base: ["https://sepolia.base.org", "https://base-sepolia-rpc.publicnode.com"],
     },
   },
   mainnet: {
     solana: [
-      "https://api.mainnet-beta.solana.com",
-      "https://rpc.ankr.com/solana",
+      "https://api.mainnet-beta.solana.com"
     ],
     evm: {
       arc: ["https://rpc.mainnet.arc.io"],
