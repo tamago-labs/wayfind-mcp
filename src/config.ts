@@ -2,8 +2,9 @@ import { existsSync, readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { createKeyPairSignerFromPrivateKeyBytes } from "@solana/kit";
 import { randomBytes, pbkdf2Sync } from "crypto";
+import sodium from "sodium-native";
+import * as bip39 from "bip39";
 import { Wallet } from "ethers";
-import { WdkSecretManager } from "@tetherto/wdk-secret-manager";
 
 const WALLET_FILE = join(process.cwd(), ".wallet.json");
 
@@ -56,8 +57,8 @@ const RPC_POOLS: Record<Network, RpcPool> = {
         "https://mainnet.optimism.io",
         "https://optimism.drpc.org",
       ],
-      world: ["https://worldchain-mainnet.gateway.tenderly.co" , "https://worldchain-mainnet.g.alchemy.com/public"],
-      sei: ["https://evm-rpc.sei-apis.com" ,"https://1329.rpc.thirdweb.com"],
+      world: ["https://worldchain-mainnet.gateway.tenderly.co", "https://worldchain-mainnet.g.alchemy.com/public"],
+      sei: ["https://evm-rpc.sei-apis.com", "https://1329.rpc.thirdweb.com"],
     },
   },
 };
@@ -103,7 +104,57 @@ interface StoredWallet {
   salt: string;
   solanaPublicKey: string;
   evmAddress: string;
-  mnemonic?: string;
+  mnemonic: string;
+}
+
+function deriveKeyFromPassKey(passkey: string, salt: Buffer): Buffer {
+  return pbkdf2Sync(passkey, salt, 100_000, 32, "sha256");
+}
+
+function encryptBuffer(buffer: Buffer, key: Buffer): Buffer {
+  if (buffer.byteLength < 16 || buffer.byteLength > 64) {
+    throw new Error("Buffer size must be between 16 and 64");
+  }
+
+  const nonce = randomBytes(sodium.crypto_secretbox_NONCEBYTES);
+  const plain = Buffer.alloc(1 + buffer.byteLength);
+  plain[0] = buffer.byteLength;
+  buffer.copy(plain, 1);
+
+  const cipher = Buffer.alloc(plain.byteLength + sodium.crypto_secretbox_MACBYTES);
+  sodium.crypto_secretbox_easy(cipher, plain, nonce, key);
+
+  const payload = Buffer.alloc(1 + nonce.byteLength + cipher.byteLength);
+  payload[0] = 0;
+  nonce.copy(payload, 1);
+  cipher.copy(payload, 1 + nonce.byteLength);
+
+  return payload;
+}
+
+function decryptBuffer(payload: Buffer, key: Buffer): Buffer {
+  const minLength = 1 + sodium.crypto_secretbox_NONCEBYTES + sodium.crypto_secretbox_MACBYTES + 1;
+  if (payload.byteLength < minLength) {
+    throw new Error("Invalid payload: too short");
+  }
+  if (payload[0] !== 0) {
+    throw new Error("Invalid version");
+  }
+
+  const nonce = payload.subarray(1, 1 + sodium.crypto_secretbox_NONCEBYTES);
+  const cipher = payload.subarray(1 + nonce.byteLength);
+
+  const plain = Buffer.alloc(cipher.byteLength - sodium.crypto_secretbox_MACBYTES);
+  if (!sodium.crypto_secretbox_open_easy(plain, cipher, nonce, key)) {
+    throw new Error("Decryption failed");
+  }
+
+  const byteLength = plain[0];
+  if (byteLength < 16 || byteLength > 64 || plain.byteLength < 1 + byteLength) {
+    throw new Error("Invalid decrypted payload");
+  }
+
+  return Buffer.from(plain.subarray(1, 1 + byteLength));
 }
 
 async function deriveKeysFromSeed(seed: Uint8Array) {
@@ -127,35 +178,28 @@ async function loadOrCreateWalletKey(): Promise<{ seed: Uint8Array; mnemonic: st
 
     const passkey = process.env.WALLET_PASSKEY!;
     const salt = Buffer.from(data.salt, "base64");
-    const sm = new WdkSecretManager(passkey, salt);
-    const seed = sm.decrypt(Buffer.from(data.encryptedSeed, "base64")) as Buffer;
-    sm.dispose();
+    const key = deriveKeyFromPassKey(passkey, salt);
+    const seed = decryptBuffer(Buffer.from(data.encryptedSeed, "base64"), key);
+
     return { seed: new Uint8Array(seed), mnemonic: null };
   }
 
-  const entropy = WdkSecretManager.generateSalt();
-  const tempSm = new WdkSecretManager("temp", entropy);
-  const randomEntropy = tempSm.generateRandomBuffer();
-  tempSm.dispose();
+  const randomEntropy = randomBytes(16);
+  const mnemonic = bip39.entropyToMnemonic(randomEntropy.toString("hex"));
+  const seed = bip39.mnemonicToSeedSync(mnemonic);
 
+  const salt = randomBytes(16);
   const passkey = process.env.WALLET_PASSKEY!;
-  const sm = new WdkSecretManager(passkey, entropy);
-  const mnemonic = sm.entropyToMnemonic(randomEntropy);
-  sm.dispose();
+  const key = deriveKeyFromPassKey(passkey, salt);
+  const encryptedSeed = encryptBuffer(Buffer.from(seed), key);
 
-  const seed = pbkdf2Sync(randomEntropy, Buffer.from("wayfind-seed-v1"), 100_000, 64, "sha512");
+  sodium.sodium_memzero(key);
 
-  const salt = WdkSecretManager.generateSalt();
-  const saltB64 = Buffer.from(salt).toString("base64");
-  const sm2 = new WdkSecretManager(passkey, salt);
-  const encryptedSeed = sm2.encrypt(Buffer.from(seed), seed.byteLength);
-  sm2.dispose();
-
-  const keys = await deriveKeysFromSeed(seed);
+  const keys = await deriveKeysFromSeed(new Uint8Array(seed));
 
   const stored: StoredWallet = {
-    encryptedSeed: Buffer.from(encryptedSeed).toString("base64"),
-    salt: saltB64,
+    encryptedSeed: encryptedSeed.toString("base64"),
+    salt: salt.toString("base64"),
     solanaPublicKey: keys.solanaPublicKey,
     evmAddress: keys.evmAddress,
     mnemonic,
@@ -177,7 +221,7 @@ export async function validateEnvironment(): Promise<AppConfig> {
     );
   }
 
-  const { seed, mnemonic } = await loadOrCreateWalletKey();
+  const { seed } = await loadOrCreateWalletKey();
   const keys = await deriveKeysFromSeed(seed);
 
   const zeroize = (buf: Uint8Array) => buf.fill(0);

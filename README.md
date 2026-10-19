@@ -11,7 +11,7 @@
 - **OKX DEX integration** for swap quotes and end-to-end token swaps (get instruction → sign → send)
 - **Tokenized stock data** from Wayfind API — prices, market overview, pre-IPO markets
 - **Risk portfolio analysis** — user risk profiles with factor breakdowns
-- **Encrypted wallet** — seed encrypted at rest with WDK Secret Manager (PBKDF2-SHA256 + libsodium secretbox)
+- **Encrypted wallet** — seed encrypted at rest using PBKDF2-SHA256 (100k iterations) + libsodium secretbox
 - **BIP39 mnemonic backup** — 12-word mnemonic stored in `.wallet.json` for recovery
 - **Token symbol resolution** — maps mint addresses to symbols for base tokens, RWA stocks, and pre-IPO tokens
 
@@ -176,7 +176,7 @@ mcp/
 ├── .gitignore
 └── src/
     ├── index.ts              # MCP server bootstrap
-    ├── config.ts             # Encrypted wallet: WDK Secret Manager + BIP39
+    ├── config.ts             # Encrypted wallet: PBKDF2 + libsodium secretbox + BIP39
     ├── types.ts              # McpTool interface
     ├── agent/
     │   └── index.ts          # Agent class: RPC client, multi-chain signer, symbol resolution
@@ -198,7 +198,7 @@ mcp/
 
 ## Wallet Security
 
-The wallet seed is encrypted at rest using WDK Secret Manager:
+The wallet seed is encrypted at rest using Node.js crypto + sodium-native:
 
 1. **PBKDF2-SHA256** (100,000 iterations) derives an encryption key from your passkey
 2. **libsodium secretbox** (XSalsa20-Poly1305) encrypts the 64-byte seed
@@ -218,7 +218,8 @@ The wallet seed is encrypted at rest using WDK Secret Manager:
 |---------|---------|---------|
 | `@modelcontextprotocol/sdk` | ^1.10.2 | MCP server + StdioServerTransport |
 | `@solana/kit` | ^2.3.0 | Solana SDK (RPC, keypairs, transactions) |
-| `@tetherto/wdk-secret-manager` | ^1.0.0-beta.3 | Encrypted seed storage |
+| `sodium-native` | ^4.3.1 | Encryption (libsodium secretbox) |
+| `bip39` | ^3.1.0 | BIP39 mnemonic generation |
 | `ethers` | ^6.17.0 | EVM wallet derivation |
 | `bs58` | ^6.0.0 | Base58 encoding |
 | `zod` | ^3.24.3 | Tool parameter schemas |
