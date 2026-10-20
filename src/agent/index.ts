@@ -21,64 +21,9 @@ import {
 import { getU8Codec } from "@solana/kit";
 import bs58 from "bs58";
 import { JsonRpcProvider, Contract, Wallet, formatUnits, isAddress } from "ethers";
-import { readFileSync } from "fs";
-import { join } from "path";
 import { validateEnvironment, type AppConfig, getNetwork, getSupportedChains } from "../config";
-import baseTokens from "../data/base-tokens.json";
-import rwaList from "../data/rwa-v1-list.json";
-import preIpoList from "../data/pre-ipo-list.json";
-
-const MINT_TO_SYMBOL: Record<string, string> = {};
-const SYMBOL_TO_MINT: Record<string, string> = {};
-for (const t of baseTokens as any[]) {
-  MINT_TO_SYMBOL[t.address] = t.symbol;
-  SYMBOL_TO_MINT[t.symbol.toUpperCase()] = t.address;
-}
-for (const asset of (rwaList as any).assets ?? []) {
-  for (const token of asset.tokens ?? []) {
-    const mint = token.addresses?.solana ?? token.mint;
-    if (mint && token.symbol) {
-      MINT_TO_SYMBOL[mint] = token.symbol;
-      SYMBOL_TO_MINT[token.symbol.toUpperCase()] = mint;
-    }
-  }
-}
-for (const asset of (preIpoList as any).assets ?? []) {
-  if (asset.mint && asset.symbol) {
-    MINT_TO_SYMBOL[asset.mint] = asset.symbol;
-    SYMBOL_TO_MINT[asset.symbol.toUpperCase()] = asset.mint;
-  }
-}
-
-interface ChainToken {
-  symbol: string;
-  name: string;
-  decimals: number;
-  address: string;
-}
-
-interface ChainData {
-  chain: string;
-  network: string;
-  chainId: number;
-  nativeCurrency: { symbol: string; name: string; decimals: number };
-  tokens: ChainToken[];
-}
-
-function loadChainData(network: string): ChainData[] {
-  const chains = ["ethereum", "base", "arbitrum", "polygon", "avalanche", "optimism", "world", "sei", "arc"];
-  const result: ChainData[] = [];
-  for (const chain of chains) {
-    try {
-      const file = join(process.cwd(), "src", "data", "chains", `${chain}-${network}.json`);
-      const data = JSON.parse(readFileSync(file, "utf-8"));
-      if (data.tokens.length > 0) {
-        result.push(data);
-      }
-    } catch {}
-  }
-  return result;
-}
+import { MINT_TO_SYMBOL, SYMBOL_TO_MINT } from "../utils/token-resolver";
+import { loadChainData, type ChainData } from "../utils/chain-data";
 
 const ERC20_BALANCE_ABI = ["function balanceOf(address) view returns (uint256)"];
 const ERC20_TRANSFER_ABI = ["function transfer(address to, uint256 amount) returns (bool)"];
