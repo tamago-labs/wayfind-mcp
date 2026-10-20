@@ -469,18 +469,32 @@ export class Agent {
     }
   }
 
+  private async createCircleAdapter(sourceChain: string) {
+    const { createEthersAdapterFromPrivateKey } = await import("@circle-fin/adapter-ethers-v6");
+    const { JsonRpcProvider } = await import("ethers");
+    const RPC_OVERRIDES: Record<string, string> = {
+      Arc_Testnet: "https://rpc.testnet.arc.io",
+      Arc: "https://rpc.mainnet.arc.io",
+    };
+    return createEthersAdapterFromPrivateKey({
+      privateKey: this.config.evmPrivateKey,
+      getProvider: (chain: any) => {
+        const chainName = typeof chain === "object" ? chain.chain || chain.name : chain;
+        if (RPC_OVERRIDES[chainName]) return new JsonRpcProvider(RPC_OVERRIDES[chainName]);
+        const rpcUrl = this.config.evmRpcUrls[sourceChain];
+        return new JsonRpcProvider(rpcUrl);
+      },
+    });
+  }
+
   async getUnifiedBalance(): Promise<any> {
     try {
-      const { AppKit } = await import("@circle-fin/app-kit");
-      const { createEthersAdapterFromPrivateKey } = await import("@circle-fin/adapter-ethers-v6");
+      const { createUnifiedBalanceKitContext, getBalances } = await import("@circle-fin/unified-balance-kit");
       const networkType = getNetwork() === "testnet" ? "testnet" : "mainnet";
+      const context = createUnifiedBalanceKitContext();
+      const adapter = await this.createCircleAdapter("ethereum");
 
-      const adapter = await createEthersAdapterFromPrivateKey({
-        privateKey: this.config.evmPrivateKey,
-      });
-
-      const kit = new AppKit();
-      const balances = await kit.unifiedBalance.getBalances({
+      const balances = await getBalances(context, {
         sources: [{ adapter }],
         networkType,
         includePending: true,
@@ -494,25 +508,12 @@ export class Agent {
 
   async depositUnified(sourceChain: string, amount: string): Promise<any> {
     try {
-      const { AppKit } = await import("@circle-fin/app-kit");
+      const { createUnifiedBalanceKitContext, deposit } = await import("@circle-fin/unified-balance-kit");
       const circleChain = toCircleChain(sourceChain);
-      const kit = new AppKit();
+      const context = createUnifiedBalanceKitContext();
+      const adapter = await this.createCircleAdapter(sourceChain);
 
-      let adapter: any;
-      if (sourceChain === "solana") {
-        const { createSolanaAdapterFromPrivateKey } = await import("@circle-fin/adapter-solana");
-        const keyPair = this.config.solancer.keyPair;
-        adapter = await createSolanaAdapterFromPrivateKey({
-          privateKey: Buffer.from(keyPair.privateKey).toString("base64"),
-        });
-      } else {
-        const { createEthersAdapterFromPrivateKey } = await import("@circle-fin/adapter-ethers-v6");
-        adapter = await createEthersAdapterFromPrivateKey({
-          privateKey: this.config.evmPrivateKey,
-        });
-      }
-
-      const result = await kit.unifiedBalance.deposit({
+      const result = await deposit(context, {
         from: { adapter, chain: circleChain },
         amount,
         token: "USDC",
@@ -526,16 +527,12 @@ export class Agent {
 
   async spendUnified(amount: string, recipient: string, targetChain: string): Promise<any> {
     try {
-      const { AppKit } = await import("@circle-fin/app-kit");
-      const { createEthersAdapterFromPrivateKey } = await import("@circle-fin/adapter-ethers-v6");
+      const { createUnifiedBalanceKitContext, spend } = await import("@circle-fin/unified-balance-kit");
       const circleChain = toCircleChain(targetChain);
+      const context = createUnifiedBalanceKitContext();
+      const adapter = await this.createCircleAdapter(targetChain);
 
-      const adapter = await createEthersAdapterFromPrivateKey({
-        privateKey: this.config.evmPrivateKey,
-      });
-
-      const kit = new AppKit();
-      const result = await kit.unifiedBalance.spend({
+      const result = await spend(context, {
         amount,
         token: "USDC",
         from: [{ adapter }],

@@ -22,7 +22,7 @@ const RPC_POOLS: Record<Network, RpcPool> = {
     ],
     evm: {
       arc: ["https://rpc.testnet.arc.io"],
-      ethereum: ["https://rpc.sepolia.org", "https://ethereum-sepolia-rpc.publicnode.com"],
+      ethereum: ["https://ethereum-sepolia-rpc.publicnode.com"],
       base: ["https://sepolia.base.org", "https://base-sepolia-rpc.publicnode.com"],
     },
   },

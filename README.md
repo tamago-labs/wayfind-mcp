@@ -7,6 +7,7 @@
 ## Features
 
 - **13 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, token swaps, and unified balance
+- **Circle Unified Balance** — deposit/spend USDC across chains via Circle's Unified Balance Kit
 - **Multi-chain support** — single encrypted seed derives both Solana and EVM keypairs
 - **Multi-chain balances** — query SOL + SPL tokens, ETH/native + ERC-20 across 10 chains
 - **Multi-chain transfers** — send native tokens and SPL/ERC-20 tokens to any address
@@ -45,7 +46,7 @@ The server uses built-in RPC pools per network (set via `WAYFIND_NETWORK`, defau
 |-------|-----|
 | Solana | `api.devnet.solana.com` |
 | Arc | `rpc.testnet.arc.io` |
-| Ethereum | `rpc.sepolia.org`, `ethereum-sepolia-rpc.publicnode.com` |
+| Ethereum | `ethereum-sepolia-rpc.publicnode.com` |
 | Base | `sepolia.base.org`, `base-sepolia-rpc.publicnode.com` |
 
 **Mainnet:**
@@ -166,15 +167,15 @@ Add to `~/.config/opencode/opencode.jsonc`:
 |-----------|-------------|----------------|
 | `wayfind_get_tokens` | List all tokenized stocks with prices | "Show me all tokenized stocks" |
 | `wayfind_get_tokenized_stocks` | Get all tokenized versions of a stock ticker across blockchains | "Get all AAPL tokens" |
-| `wayfind_get_market_overview` | Get market stats: total cap, volume, gainers, losers, trending | "Show market overview" |
+| `wayfind_get_market_overview` | Get tokenized stock market stats: total cap, volume, gainers, losers, trending | "Show market overview" |
 
 ### Circle Unified Balance
 
 | Tool Name | Description | Example Prompt |
 |-----------|-------------|----------------|
 | `circle_get_unified_balance` | Get aggregated USDC unified balance across chains | "Show my unified balance" |
-| `circle_deposit_unified` | Deposit USDC from a source chain into unified balance | "Deposit 10 USDC from Base" |
-| `circle_spend_unified` | Spend USDC from unified balance to a recipient | "Send 5 USDC to 0x... on Arc" |
+| `circle_deposit_unified` | Deposit USDC from any chain (solana, ethereum, base, etc.) | "Deposit 10 USDC from Base" |
+| `circle_spend_unified` | Spend USDC from unified balance to any recipient/chain (cross-chain via CCTP) | "Send 5 USDC to 0x... on Arc" |
 
 ### Risk Analysis
 
@@ -192,10 +193,13 @@ mcp/
 ├── .gitignore
 └── src/
     ├── index.ts              # MCP server bootstrap
-    ├── config.ts             # Encrypted wallet: PBKDF2 + libsodium secretbox + BIP39, multi-chain RPCs
+    ├── config.ts             # Encrypted wallet: PBKDF2 + libsodium secretbox + BIP39, multi-chain RPCs, Circle chain mapping
     ├── types.ts              # McpTool interface
     ├── agent/
-    │   └── index.ts          # Agent class: multi-chain RPC, signer, balance queries, transfers, symbol resolution
+    │   └── index.ts          # Agent class: multi-chain RPC, signer, balance queries, transfers, swaps, Circle SDK
+    ├── utils/
+    │   ├── token-resolver.ts       # MINT_TO_SYMBOL / SYMBOL_TO_MINT maps
+    │   └── chain-data.ts           # ChainData, ChainToken types + loadChainData()
     ├── data/
     │   ├── base-tokens.json       # Common token list (Solana mainnet + devnet)
     │   ├── rwa-v1-list.json       # RWA/tokenized stock data
@@ -246,12 +250,12 @@ The wallet seed is encrypted at rest using Node.js crypto + sodium-native:
 | `@solana/kit` | ^3.0.3 | Solana SDK (RPC, keypairs, transactions) |
 | `sodium-native` | ^4.3.1 | Encryption (libsodium secretbox) |
 | `bip39` | ^3.1.0 | BIP39 mnemonic generation |
-| `ethers` | ^6.17.0 | EVM wallet derivation |
+| `ethers` | ^6.17.0 | EVM wallet derivation + Circle SDK providers |
 | `bs58` | ^6.0.0 | Base58 encoding |
-| `@circle-fin/app-kit` | ^1.17.0 | Circle Unified Balance SDK |
+| `@circle-fin/unified-balance-kit` | ^1.8.0 | Circle Unified Balance SDK |
 | `@circle-fin/adapter-ethers-v6` | ^1.12.1 | EVM adapter for Circle SDK |
-| `@circle-fin/adapter-solana` | ^1.7.0 | Solana adapter for Circle SDK |
 | `zod` | ^3.24.3 | Tool parameter schemas |
+| `ws` | ^8.22.0 | WebSocket RPC subscriptions |
 
 ## Building
 

@@ -8,7 +8,7 @@ export const SpendUnifiedTool: McpTool = {
   schema: {
     amount: z.string().describe("Amount of USDC to spend"),
     recipient: z.string().describe("Recipient wallet address"),
-    targetChain: z.string().describe("Chain to receive USDC (e.g., 'arc', 'ethereum', 'base')"),
+    targetChain: z.string().describe("Chain to receive USDC (e.g., 'solana', 'arc', 'ethereum', 'base', 'arbitrum')"),
   },
   handler: async (agent: Agent, input: Record<string, any>) => {
     return agent.spendUnified(input.amount, input.recipient, input.targetChain);
