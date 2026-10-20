@@ -1,0 +1,10 @@
+{
+  "chain": "sei",
+  "network": "mainnet",
+  "chainId": 1329,
+  "nativeCurrency": { "symbol": "SEI", "name": "Sei", "decimals": 18 },
+  "tokens": [
+    { "symbol": "USDC", "name": "USD Coin", "decimals": 6, "address": "0xe15fc38f6d8c56af07bbcbe3baf5708a2bf42392" },
+    { "symbol": "USD₮0", "name": "USD₮0", "decimals": 18, "address": "0x9151434b16b9763660705744891fa906f660ecc5" }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "chain": "base",
+  "network": "mainnet",
+  "chainId": 8453,
+  "nativeCurrency": { "symbol": "ETH", "name": "Ether", "decimals": 18 },
+  "tokens": [
+    { "symbol": "USDC", "name": "USD Coin", "decimals": 6, "address": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" },
+    { "symbol": "WETH", "name": "Wrapped Ether", "decimals": 18, "address": "0x4200000000000000000000000000000000000006" },
+    { "symbol": "SOL", "name": "Wrapped SOL", "decimals": 9, "address": "0x311935Cd80B76769bF2ecC9D8Ab7635b2139cf82" },
+    { "symbol": "USDS", "name": "USDS Stablecoin", "decimals": 18, "address": "0x820C137fa70C8691f0e44Dc420a5e53c168921Dc" },
+    { "symbol": "EURC", "name": "Euro Coin", "decimals": 6, "address": "0x820C137fa70C8691f0e44Dc420a5e53c168921Dc" }
+  ]
+}
