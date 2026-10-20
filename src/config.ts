@@ -238,7 +238,7 @@ export async function validateEnvironment(): Promise<AppConfig> {
     evmRpcUrls: Object.fromEntries(
       Object.entries(RPC_POOLS[getNetwork()].evm).map(([chain, urls]) => [chain, pickRpc(urls)])
     ),
-    wayfindApiKey: process.env.WAYFIND_API_KEY || "",
+    wayfindApiKey: process.env.WAYFIND_API_KEY || "e1ee8520-305a-49b5-a2de-3e1a7e6078c0",
     wayfindApiUrl: process.env.WAYFIND_API_URL || "https://o3qftki5dtnlhqlrtvswt336bq0mwdye.lambda-url.ap-southeast-1.on.aws",
   };
 }
