@@ -2,21 +2,20 @@
 
 ![NPM Version](https://img.shields.io/npm/v/@tamago-labs/wayfind-mcp)
 
-**Wayfind MCP** is a Model Context Protocol (MCP) server for the Wayfind AI risk intelligence platform. It provides multi-chain wallet operations, token transfers, tokenized stock data, risk analysis, and OKX DEX swap integration across **Solana** and **EVM** chains.
+**Wayfind MCP** is a Model Context Protocol server for multi-chain DeFi operations, tokenized stock data, and Circle Unified Balance. It provides wallet management, token transfers, Solana swaps, USDC cross-chain deposit/spend, and risk intelligence across **Solana** and **EVM** chains.
 
 ## Features
 
-- **13 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, token swaps, and unified balance
+- **13 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, token swaps, and Circle Unified Balance
 - **Circle Unified Balance** — deposit/spend USDC across chains via Circle's Unified Balance Kit
-- **Multi-chain support** — single encrypted seed derives both Solana and EVM keypairs
+- **Multi-chain agentic wallet** — single encrypted seed derives Solana and EVM keypairs across all supported chains
 - **Multi-chain balances** — query SOL + SPL tokens, ETH/native + ERC-20 across 10 chains
 - **Multi-chain transfers** — send native tokens and SPL/ERC-20 tokens to any address
-- **OKX DEX integration** for swap quotes and end-to-end token swaps (get instruction → sign → send)
+- **OKX DEX integration** for swap quotes and end-to-end token swaps (Solana mainnet)
 - **Tokenized stock data** from Wayfind API — prices, market overview
 - **Risk portfolio analysis** — user risk profiles with factor breakdowns
 - **Encrypted wallet** — seed encrypted at rest using PBKDF2-SHA256 (100k iterations) + libsodium secretbox
-- **BIP39 mnemonic backup** — 12-word mnemonic stored in `.wallet.json` for recovery
-- **Token symbol resolution** — maps mint addresses to symbols for base tokens, RWA stocks, and pre-IPO tokens
+- **BIP39 mnemonic backup** — 12-word mnemonic stored in `.wallet.json` on bot's computer for recovery
 
 ## Installation
 
@@ -70,18 +69,16 @@ Switch to mainnet:
 export WAYFIND_NETWORK=mainnet
 ```
 
-For production use, run your own RPC node or use a provider like Helius, QuickNode, or Alchemy to avoid rate limits.
-
 ### First Run
 
 On first run with `WALLET_PASSKEY` set, the server generates a new wallet and saves:
 
-- **`.wallet.json`** — encrypted seed + salt + public addresses + BIP39 mnemonic (mode `0o600`)
+- **`.wallet.json`** — encrypted seed + salt + public addresses + BIP39 mnemonic stored on bot's computer (mode `0o600`)
 
 The mnemonic is stored inside `.wallet.json` for recovery. View it with:
 
 ```bash
-cat .wallet.json | jq .mnemonic
+cat .wallet.json
 ```
 
 Save the mnemonic somewhere secure — it can restore both Solana and EVM keys if `.wallet.json` is lost.
