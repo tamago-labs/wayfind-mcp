@@ -385,10 +385,95 @@ export class Agent {
     };
   }
 
+  async getTransaction(chain: string, txHash: string): Promise<any> {
+    const network = getNetwork();
+
+    if (chain === "solana") {
+      try {
+        const tx = await this.rpc.getTransaction(txHash, { encoding: "jsonParsed", maxSupportedTransactionVersion: 0 }).send();
+        if (!tx) return { error: "Transaction not found" };
+
+        const meta = tx.meta;
+        const status = meta?.err ? "failed" : "confirmed";
+        const slot = tx.slot;
+
+        const transfers: Array<{ mint: string; symbol: string; amount: string; direction: string; accountIndex: number }> = [];
+        if (meta?.postTokenBalances && meta?.preTokenBalances) {
+          for (const post of meta.postTokenBalances) {
+            const pre = meta.preTokenBalances.find((p: any) => p.accountIndex === post.accountIndex);
+            if (pre && pre.uiTokenAmount.uiAmount !== post.uiTokenAmount.uiAmount) {
+              const mint = post.mint;
+              const symbol = MINT_TO_SYMBOL[mint] || post.uiTokenAmount?.symbol || "UNKNOWN";
+              const preAmt = Number(pre.uiTokenAmount.uiAmount);
+              const postAmt = Number(post.uiTokenAmount.uiAmount);
+              const diff = postAmt - preAmt;
+              transfers.push({
+                mint,
+                symbol,
+                amount: Math.abs(diff).toString(),
+                direction: diff > 0 ? "in" : "out",
+                accountIndex: post.accountIndex,
+              });
+            }
+          }
+        }
+
+        return {
+          chain,
+          txHash,
+          status,
+          slot: slot?.toString(),
+          blockTime: tx.blockTime?.toString(),
+          fee: meta?.fee ? `${Number(meta.fee) / 1_000_000_000} SOL` : "0",
+          transfers: transfers.length > 0 ? transfers : undefined,
+          explorer: this.getExplorerUrl(chain, txHash),
+        };
+      } catch (err: any) {
+        return { error: err?.message || "Failed to fetch transaction" };
+      }
+    }
+
+    const rpcUrl = this.config.evmRpcUrls[chain];
+    if (!rpcUrl) return { error: `Unsupported chain '${chain}'` };
+
+    try {
+      const provider = new JsonRpcProvider(rpcUrl);
+      const tx = await provider.getTransaction(txHash);
+      const receipt = await provider.getTransactionReceipt(txHash);
+
+      if (!receipt) {
+        return {
+          chain,
+          txHash,
+          status: "pending",
+          from: tx?.from || "unknown",
+          to: tx?.to || "unknown",
+          explorer: this.getExplorerUrl(chain, txHash),
+        };
+      }
+
+      return {
+        chain,
+        txHash,
+        status: receipt.status === 1 ? "confirmed" : "failed",
+        blockNumber: receipt.blockNumber,
+        blockTimestamp: tx?.timestamp,
+        from: receipt.from,
+        to: receipt.to,
+        value: tx?.value ? formatUnits(tx.value, 18) : "0",
+        gasUsed: receipt.gasUsed?.toString(),
+        explorer: this.getExplorerUrl(chain, txHash),
+      };
+    } catch (err: any) {
+      return { error: err?.message || "Failed to fetch transaction" };
+    }
+  }
+
   private getExplorerUrl(chain: string, hash?: string): string {
     if (!hash) return "";
     const network = getNetwork();
     const explorers: Record<string, Record<string, string>> = {
+      solana: { mainnet: "https://explorer.solana.com/tx/", testnet: "https://explorer.solana.com/tx/" },
       ethereum: { mainnet: "https://etherscan.io/tx/", testnet: "https://sepolia.etherscan.io/tx/" },
       base: { mainnet: "https://basescan.org/tx/", testnet: "https://sepolia.basescan.org/tx/" },
       arbitrum: { mainnet: "https://arbiscan.io/tx/", testnet: "https://sepolia.arbiscan.io/tx/" },
@@ -399,6 +484,8 @@ export class Agent {
       sei: { mainnet: "https://seistream.app/tx/", testnet: "https://seistream.app/tx/" },
       arc: { mainnet: "https://explorer.arc.io/tx/", testnet: "https://explorer.testnet.arc.io/tx/" },
     };
-    return (explorers[chain]?.[network] || "") + hash;
+    const base = explorers[chain]?.[network] || "";
+    if (chain === "solana" && network === "testnet") return `${base}${hash}?cluster=devnet`;
+    return base + hash;
   }
 }

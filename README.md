@@ -6,7 +6,7 @@
 
 ## Features
 
-- **9 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, and token swaps
+- **10 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, and token swaps
 - **Multi-chain support** — single encrypted seed derives both Solana and EVM keypairs
 - **Multi-chain balances** — query SOL + SPL tokens, ETH/native + ERC-20 across 10 chains
 - **Multi-chain transfers** — send native tokens and SPL/ERC-20 tokens to any address
@@ -156,6 +156,7 @@ Add to `~/.config/opencode/opencode.jsonc`:
 | Tool Name | Description | Example Prompt |
 |-----------|-------------|----------------|
 | `send_tokens` | Send native tokens and SPL/ERC-20 tokens to any address. Auto-creates token accounts on Solana. | "Send 1 USDC to 0xABC..." |
+| `get_transaction` | Get transaction details and status by chain and hash | "Check this Solana tx" |
 | `solana_get_swap_quote` | Get an OKX DEX swap quote for a token pair | "How much USDC for 1 SOL?" |
 | `solana_swap_tokens` | Swap tokens on Solana via OKX DEX (signs and sends, mainnet only) | "Swap 0.1 SOL to USDC" |
 
@@ -197,7 +198,8 @@ mcp/
         ├── shared/                 # Cross-chain tools
         │   ├── get_wallet_address_tool.ts
         │   ├── get_balances_tool.ts
-        │   └── send_tokens_tool.ts
+        │   ├── send_tokens_tool.ts
+        │   └── get_transaction_tool.ts
         ├── solana/                 # Solana-specific tools
         │   ├── get_swap_quote_tool.ts
         │   └── swap_tokens_tool.ts
