@@ -8,7 +8,7 @@ import { Agent } from "./agent";
 function createMcpServer(agent: Agent) {
   const server = new McpServer({
     name: "wayfind-mcp",
-    version: "1.5.0",
+    version: "1.5.1",
   });
 
   for (const [_key, tool] of Object.entries(McpTools)) {
