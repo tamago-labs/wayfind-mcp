@@ -21,7 +21,7 @@ import {
 import { getU8Codec } from "@solana/kit";
 import bs58 from "bs58";
 import { JsonRpcProvider, Contract, Wallet, formatUnits, isAddress } from "ethers";
-import { validateEnvironment, type AppConfig, getNetwork, getSupportedChains } from "../config";
+import { validateEnvironment, type AppConfig, getNetwork, getSupportedChains, toCircleChain } from "../config";
 import { MINT_TO_SYMBOL, SYMBOL_TO_MINT } from "../utils/token-resolver";
 import { loadChainData, type ChainData } from "../utils/chain-data";
 
@@ -466,6 +466,85 @@ export class Agent {
       };
     } catch (err: any) {
       return { error: err?.message || "Failed to fetch transaction" };
+    }
+  }
+
+  async getUnifiedBalance(): Promise<any> {
+    try {
+      const { AppKit } = await import("@circle-fin/app-kit");
+      const { createEthersAdapterFromPrivateKey } = await import("@circle-fin/adapter-ethers-v6");
+      const networkType = getNetwork() === "testnet" ? "testnet" : "mainnet";
+
+      const adapter = await createEthersAdapterFromPrivateKey({
+        privateKey: this.config.evmPrivateKey,
+      });
+
+      const kit = new AppKit();
+      const balances = await kit.unifiedBalance.getBalances({
+        sources: [{ adapter }],
+        networkType,
+        includePending: true,
+      });
+
+      return balances;
+    } catch (err: any) {
+      return { error: err?.message || "Failed to fetch unified balance" };
+    }
+  }
+
+  async depositUnified(sourceChain: string, amount: string): Promise<any> {
+    try {
+      const { AppKit } = await import("@circle-fin/app-kit");
+      const circleChain = toCircleChain(sourceChain);
+      const kit = new AppKit();
+
+      let adapter: any;
+      if (sourceChain === "solana") {
+        const { createSolanaAdapterFromPrivateKey } = await import("@circle-fin/adapter-solana");
+        const keyPair = this.config.solancer.keyPair;
+        adapter = await createSolanaAdapterFromPrivateKey({
+          privateKey: Buffer.from(keyPair.privateKey).toString("base64"),
+        });
+      } else {
+        const { createEthersAdapterFromPrivateKey } = await import("@circle-fin/adapter-ethers-v6");
+        adapter = await createEthersAdapterFromPrivateKey({
+          privateKey: this.config.evmPrivateKey,
+        });
+      }
+
+      const result = await kit.unifiedBalance.deposit({
+        from: { adapter, chain: circleChain },
+        amount,
+        token: "USDC",
+      });
+
+      return result;
+    } catch (err: any) {
+      return { error: err?.message || "Deposit failed" };
+    }
+  }
+
+  async spendUnified(amount: string, recipient: string, targetChain: string): Promise<any> {
+    try {
+      const { AppKit } = await import("@circle-fin/app-kit");
+      const { createEthersAdapterFromPrivateKey } = await import("@circle-fin/adapter-ethers-v6");
+      const circleChain = toCircleChain(targetChain);
+
+      const adapter = await createEthersAdapterFromPrivateKey({
+        privateKey: this.config.evmPrivateKey,
+      });
+
+      const kit = new AppKit();
+      const result = await kit.unifiedBalance.spend({
+        amount,
+        token: "USDC",
+        from: [{ adapter }],
+        to: { adapter, chain: circleChain, recipientAddress: recipient },
+      });
+
+      return result;
+    } catch (err: any) {
+      return { error: err?.message || "Spend failed" };
     }
   }
 

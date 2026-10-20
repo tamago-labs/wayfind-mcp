@@ -93,6 +93,38 @@ export function getEvmRpc(chain: string): string {
   return pickRpc(list);
 }
 
+const CHAIN_TO_CIRCLE: Record<string, string> = {
+  ethereum: "Ethereum",
+  base: "Base",
+  arbitrum: "Arbitrum",
+  polygon: "Polygon",
+  avalanche: "Avalanche",
+  optimism: "Optimism",
+  world: "World_Chain",
+  sei: "Sei",
+  arc: "Arc",
+  solana: "Solana",
+};
+
+const TESTNET_OVERRIDES: Record<string, string> = {
+  ethereum: "Ethereum_Sepolia",
+  base: "Base_Sepolia",
+  arbitrum: "Arbitrum_Sepolia",
+  polygon: "Polygon_Amoy_Testnet",
+  avalanche: "Avalanche_Testnet",
+  optimism: "Optimism_Sepolia",
+  world: "World_Chain_Sepolia",
+  sei: "Sei_Testnet",
+  arc: "Arc_Testnet",
+  solana: "Solana_Devnet",
+};
+
+export function toCircleChain(chain: string): string {
+  const network = getNetwork();
+  if (network === "testnet") return TESTNET_OVERRIDES[chain] || chain;
+  return CHAIN_TO_CIRCLE[chain] || chain;
+}
+
 export interface AppConfig {
   solanaSigner: Awaited<ReturnType<typeof createKeyPairSignerFromPrivateKeyBytes>>;
   solanaPublicKey: string;

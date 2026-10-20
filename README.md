@@ -6,7 +6,7 @@
 
 ## Features
 
-- **10 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, and token swaps
+- **13 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, token swaps, and unified balance
 - **Multi-chain support** — single encrypted seed derives both Solana and EVM keypairs
 - **Multi-chain balances** — query SOL + SPL tokens, ETH/native + ERC-20 across 10 chains
 - **Multi-chain transfers** — send native tokens and SPL/ERC-20 tokens to any address
@@ -168,6 +168,14 @@ Add to `~/.config/opencode/opencode.jsonc`:
 | `wayfind_get_tokenized_stocks` | Get all tokenized versions of a stock ticker across blockchains | "Get all AAPL tokens" |
 | `wayfind_get_market_overview` | Get market stats: total cap, volume, gainers, losers, trending | "Show market overview" |
 
+### Circle Unified Balance
+
+| Tool Name | Description | Example Prompt |
+|-----------|-------------|----------------|
+| `circle_get_unified_balance` | Get aggregated USDC unified balance across chains | "Show my unified balance" |
+| `circle_deposit_unified` | Deposit USDC from a source chain into unified balance | "Deposit 10 USDC from Base" |
+| `circle_spend_unified` | Spend USDC from unified balance to a recipient | "Send 5 USDC to 0x... on Arc" |
+
 ### Risk Analysis
 
 | Tool Name | Description | Example Prompt |
@@ -203,6 +211,10 @@ mcp/
         ├── solana/                 # Solana-specific tools
         │   ├── get_swap_quote_tool.ts
         │   └── swap_tokens_tool.ts
+        ├── circle/                 # Circle Unified Balance tools
+        │   ├── get_unified_balance_tool.ts
+        │   ├── deposit_unified_tool.ts
+        │   └── spend_unified_tool.ts
         └── wayfind/                # Wayfind API tools
             ├── get_tokens_tool.ts
             ├── get_tokenized_stocks_tool.ts
@@ -236,7 +248,9 @@ The wallet seed is encrypted at rest using Node.js crypto + sodium-native:
 | `bip39` | ^3.1.0 | BIP39 mnemonic generation |
 | `ethers` | ^6.17.0 | EVM wallet derivation |
 | `bs58` | ^6.0.0 | Base58 encoding |
-| `ws` | ^8.22.0 | WebSocket RPC subscriptions |
+| `@circle-fin/app-kit` | ^1.17.0 | Circle Unified Balance SDK |
+| `@circle-fin/adapter-ethers-v6` | ^1.12.1 | EVM adapter for Circle SDK |
+| `@circle-fin/adapter-solana` | ^1.7.0 | Solana adapter for Circle SDK |
 | `zod` | ^3.24.3 | Tool parameter schemas |
 
 ## Building
