@@ -1,12 +1,13 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
+import { homedir } from "os";
 import { createKeyPairSignerFromPrivateKeyBytes } from "@solana/kit";
 import { randomBytes, pbkdf2Sync } from "crypto";
 import sodium from "sodium-native";
 import * as bip39 from "bip39";
 import { Wallet } from "ethers";
 
-const WALLET_FILE = join(process.cwd(), ".wallet.json");
+const WALLET_FILE = join(homedir(), ".wayfind", ".wallet.json");
 
 type Network = "testnet" | "mainnet";
 
@@ -241,6 +242,11 @@ async function loadOrCreateWalletKey(): Promise<{ seed: Uint8Array; mnemonic: st
     evmAddress: keys.evmAddress,
     mnemonic,
   };
+
+  const walletDir = join(homedir(), ".wayfind");
+  if (!existsSync(walletDir)) {
+    mkdirSync(walletDir, { recursive: true, mode: 0o700 });
+  }
 
   writeFileSync(WALLET_FILE, JSON.stringify(stored, null, 2), { mode: 0o600 });
 
