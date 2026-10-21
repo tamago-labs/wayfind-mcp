@@ -15,7 +15,7 @@
 - **Tokenized stock data** from Wayfind API — prices, market overview
 - **Risk portfolio analysis** — user risk profiles with factor breakdowns
 - **Encrypted wallet** — seed encrypted at rest using PBKDF2-SHA256 (100k iterations) + libsodium secretbox
-- **BIP39 mnemonic backup** — 12-word mnemonic stored in `.wallet.json` on bot's computer for recovery
+- **BIP39 mnemonic backup** — 12-word mnemonic stored separately in `~/.wayfind/BACKUP_AND_REMOVE.txt` for recovery
 
 ## Installation
 
@@ -71,17 +71,20 @@ export WAYFIND_NETWORK=mainnet
 
 ### First Run
 
-On first run with `WALLET_PASSKEY` set, the server generates a new wallet and saves:
+On first run with `WALLET_PASSKEY` set, the server generates a new wallet and saves to `~/.wayfind/`:
 
-- **`.wallet.json`** — encrypted seed + salt + public addresses + BIP39 mnemonic stored on bot's computer (mode `0o600`)
+- **`.wayfind/.wallet.json`** — encrypted seed + salt + public addresses (mode `0o600`)
+- **`~/.wayfind/BACKUP_AND_REMOVE.txt`** — BIP39 mnemonic for recovery (mode `0o600`)
 
-The mnemonic is stored inside `.wallet.json` for recovery. View it with:
+The mnemonic is stored separately so you can back it up and delete it from the machine. View it with:
 
 ```bash
-cat .wallet.json
+cat ~/.wayfind/BACKUP_AND_REMOVE.txt
 ```
 
 Save the mnemonic somewhere secure — it can restore both Solana and EVM keys if `.wallet.json` is lost.
+
+**Security tip:** After backing up the mnemonic, delete `BACKUP_AND_REMOVE.txt` from the machine to reduce exposure. The encrypted `.wallet.json` alone cannot be restored without the passkey.
 
 Subsequent runs decrypt silently using your passkey.
 
@@ -229,14 +232,15 @@ The wallet seed is encrypted at rest using Node.js crypto + sodium-native:
 
 1. **PBKDF2-SHA256** (100,000 iterations) derives an encryption key from your passkey
 2. **libsodium secretbox** (XSalsa20-Poly1305) encrypts the 64-byte seed
-3. `{ encryptedSeed, salt, solanaPublicKey, evmAddress, mnemonic }` is stored in `.wallet.json` — **no plaintext keys**
-4. The BIP39 mnemonic (12 words) is stored in `.wallet.json` for recovery
+3. `{ encryptedSeed, salt, solanaPublicKey, evmAddress }` is stored in `~/.wayfind/.wallet.json` — **no plaintext keys, no mnemonic**
+4. The BIP39 mnemonic (12 words) is stored separately in `~/.wayfind/BACKUP_AND_REMOVE.txt` for recovery
 5. On startup, the seed is decrypted in memory and zeroized on process exit
 
 **Security notes:**
 - Choose a strong passkey (12+ characters, mixed entropy)
 - Never share your passkey or mnemonic
-- `.wallet.json` contains the encrypted seed + plaintext mnemonic — protect it (mode `0600`, gitignored)
+- `~/.wayfind/.wallet.json` contains only encrypted data — protect it (mode `0600`, gitignored)
+- `~/.wayfind/BACKUP_AND_REMOVE.txt` contains the plaintext mnemonic — back it up, then delete from machine
 - If `.wallet.json` is lost, the mnemonic can fully restore both Solana and EVM keys
 
 ## Dependencies
