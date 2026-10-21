@@ -142,7 +142,6 @@ interface StoredWallet {
   salt: string;
   solanaPublicKey: string;
   evmAddress: string;
-  mnemonic: string;
 }
 
 function deriveKeyFromPassKey(passkey: string, salt: Buffer): Buffer {
@@ -212,12 +211,19 @@ async function deriveKeysFromSeed(seed: Uint8Array) {
 
 async function loadOrCreateWalletKey(): Promise<{ seed: Uint8Array; mnemonic: string | null }> {
   if (existsSync(WALLET_FILE)) {
-    const data: StoredWallet = JSON.parse(readFileSync(WALLET_FILE, "utf-8"));
+    const raw: StoredWallet & { mnemonic?: string } = JSON.parse(readFileSync(WALLET_FILE, "utf-8"));
+
+    if (raw.mnemonic) {
+      const mnemonicFile = join(homedir(), ".wayfind", "BACKUP_AND_REMOVE.txt");
+      if (!existsSync(mnemonicFile)) {
+        writeFileSync(mnemonicFile, raw.mnemonic, { mode: 0o600 });
+      }
+    }
 
     const passkey = process.env.WALLET_PASSKEY!;
-    const salt = Buffer.from(data.salt, "base64");
+    const salt = Buffer.from(raw.salt, "base64");
     const key = deriveKeyFromPassKey(passkey, salt);
-    const seed = decryptBuffer(Buffer.from(data.encryptedSeed, "base64"), key);
+    const seed = decryptBuffer(Buffer.from(raw.encryptedSeed, "base64"), key);
 
     return { seed: new Uint8Array(seed), mnemonic: null };
   }
@@ -235,18 +241,22 @@ async function loadOrCreateWalletKey(): Promise<{ seed: Uint8Array; mnemonic: st
 
   const keys = await deriveKeysFromSeed(new Uint8Array(seed));
 
+  const walletDir = join(homedir(), ".wayfind");
+  if (!existsSync(walletDir)) {
+    mkdirSync(walletDir, { recursive: true, mode: 0o700 });
+  }
+
+  const mnemonicFile = join(walletDir, "BACKUP_AND_REMOVE.txt");
+  if (!existsSync(mnemonicFile)) {
+    writeFileSync(mnemonicFile, mnemonic, { mode: 0o600 });
+  }
+
   const stored: StoredWallet = {
     encryptedSeed: encryptedSeed.toString("base64"),
     salt: salt.toString("base64"),
     solanaPublicKey: keys.solanaPublicKey,
     evmAddress: keys.evmAddress,
-    mnemonic,
   };
-
-  const walletDir = join(homedir(), ".wayfind");
-  if (!existsSync(walletDir)) {
-    mkdirSync(walletDir, { recursive: true, mode: 0o700 });
-  }
 
   writeFileSync(WALLET_FILE, JSON.stringify(stored, null, 2), { mode: 0o600 });
 
