@@ -6,8 +6,7 @@
 
 ## Features
 
-- **13 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, token swaps, and Circle Unified Balance
-- **Circle Unified Balance** — deposit/spend USDC across chains via Circle's Unified Balance Kit
+- **10 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, and token swaps
 - **Multi-chain agentic wallet** — single encrypted seed derives Solana and EVM keypairs across all supported chains
 - **Multi-chain balances** — query SOL + SPL tokens, ETH/native + ERC-20 across 10 chains
 - **Multi-chain transfers** — send native tokens and SPL/ERC-20 tokens to any address
@@ -169,14 +168,6 @@ Add to `~/.config/opencode/opencode.jsonc`:
 | `wayfind_get_tokenized_stocks` | Get all tokenized versions of a stock ticker across blockchains | "Get all AAPL tokens" |
 | `wayfind_get_market_overview` | Get tokenized stock market stats: total cap, volume, gainers, losers, trending | "Show market overview" |
 
-### Circle Unified Balance
-
-| Tool Name | Description | Example Prompt |
-|-----------|-------------|----------------|
-| `circle_get_unified_balance` | Get aggregated USDC unified balance across chains | "Show my unified balance" |
-| `circle_deposit_unified` | Deposit USDC from any chain (solana, ethereum, base, etc.) | "Deposit 10 USDC from Base" |
-| `circle_spend_unified` | Spend USDC from unified balance to any recipient/chain (cross-chain via CCTP) | "Send 5 USDC to 0x... on Arc" |
-
 ### Risk Analysis
 
 | Tool Name | Description | Example Prompt |
@@ -193,10 +184,10 @@ mcp/
 ├── .gitignore
 └── src/
     ├── index.ts              # MCP server bootstrap
-    ├── config.ts             # Encrypted wallet: PBKDF2 + libsodium secretbox + BIP39, multi-chain RPCs, Circle chain mapping
+    ├── config.ts             # Encrypted wallet: PBKDF2 + libsodium secretbox + BIP39, multi-chain RPCs
     ├── types.ts              # McpTool interface
     ├── agent/
-    │   └── index.ts          # Agent class: multi-chain RPC, signer, balance queries, transfers, swaps, Circle SDK
+    │   └── index.ts          # Agent class: multi-chain RPC, signer, balance queries, transfers, swaps
     ├── utils/
     │   ├── token-resolver.ts       # MINT_TO_SYMBOL / SYMBOL_TO_MINT maps
     │   └── chain-data.ts           # ChainData, ChainToken types + loadChainData()
@@ -215,10 +206,6 @@ mcp/
         ├── solana/                 # Solana-specific tools
         │   ├── get_swap_quote_tool.ts
         │   └── swap_tokens_tool.ts
-        ├── circle/                 # Circle Unified Balance tools
-        │   ├── get_unified_balance_tool.ts
-        │   ├── deposit_unified_tool.ts
-        │   └── spend_unified_tool.ts
         └── wayfind/                # Wayfind API tools
             ├── get_tokens_tool.ts
             ├── get_tokenized_stocks_tool.ts
@@ -251,10 +238,8 @@ The wallet seed is encrypted at rest using Node.js crypto + sodium-native:
 | `@solana/kit` | ^3.0.3 | Solana SDK (RPC, keypairs, transactions) |
 | `sodium-native` | ^4.3.1 | Encryption (libsodium secretbox) |
 | `bip39` | ^3.1.0 | BIP39 mnemonic generation |
-| `ethers` | ^6.17.0 | EVM wallet derivation + Circle SDK providers |
+| `ethers` | ^6.17.0 | EVM wallet derivation |
 | `bs58` | ^6.0.0 | Base58 encoding |
-| `@circle-fin/unified-balance-kit` | ^1.8.0 | Circle Unified Balance SDK |
-| `@circle-fin/adapter-ethers-v6` | ^1.12.1 | EVM adapter for Circle SDK |
 | `zod` | ^3.24.3 | Tool parameter schemas |
 | `ws` | ^8.22.0 | WebSocket RPC subscriptions |
 

@@ -21,7 +21,7 @@ import {
 import { getU8Codec } from "@solana/kit";
 import bs58 from "bs58";
 import { JsonRpcProvider, Contract, Wallet, formatUnits, isAddress } from "ethers";
-import { validateEnvironment, type AppConfig, getNetwork, getSupportedChains, toCircleChain } from "../config";
+import { validateEnvironment, type AppConfig, getNetwork, getSupportedChains } from "../config";
 import { MINT_TO_SYMBOL, SYMBOL_TO_MINT } from "../utils/token-resolver";
 import { loadChainData, type ChainData } from "../utils/chain-data";
 
@@ -466,82 +466,6 @@ export class Agent {
       };
     } catch (err: any) {
       return { error: err?.message || "Failed to fetch transaction" };
-    }
-  }
-
-  private async createCircleAdapter(sourceChain: string) {
-    const { createEthersAdapterFromPrivateKey } = await import("@circle-fin/adapter-ethers-v6");
-    const { JsonRpcProvider } = await import("ethers");
-    const RPC_OVERRIDES: Record<string, string> = {
-      Arc_Testnet: "https://rpc.testnet.arc.io",
-      Arc: "https://rpc.mainnet.arc.io",
-    };
-    return createEthersAdapterFromPrivateKey({
-      privateKey: this.config.evmPrivateKey,
-      getProvider: (chain: any) => {
-        const chainName = typeof chain === "object" ? chain.chain || chain.name : chain;
-        if (RPC_OVERRIDES[chainName]) return new JsonRpcProvider(RPC_OVERRIDES[chainName]);
-        const rpcUrl = this.config.evmRpcUrls[sourceChain];
-        return new JsonRpcProvider(rpcUrl);
-      },
-    });
-  }
-
-  async getUnifiedBalance(): Promise<any> {
-    try {
-      const { createUnifiedBalanceKitContext, getBalances } = await import("@circle-fin/unified-balance-kit");
-      const networkType = getNetwork() === "testnet" ? "testnet" : "mainnet";
-      const context = createUnifiedBalanceKitContext();
-      const adapter = await this.createCircleAdapter("ethereum");
-
-      const balances = await getBalances(context, {
-        sources: [{ adapter }],
-        networkType,
-        includePending: true,
-      });
-
-      return balances;
-    } catch (err: any) {
-      return { error: err?.message || "Failed to fetch unified balance" };
-    }
-  }
-
-  async depositUnified(sourceChain: string, amount: string): Promise<any> {
-    try {
-      const { createUnifiedBalanceKitContext, deposit } = await import("@circle-fin/unified-balance-kit");
-      const circleChain = toCircleChain(sourceChain);
-      const context = createUnifiedBalanceKitContext();
-      const adapter = await this.createCircleAdapter(sourceChain);
-
-      const result = await deposit(context, {
-        from: { adapter, chain: circleChain },
-        amount,
-        token: "USDC",
-      });
-
-      return result;
-    } catch (err: any) {
-      return { error: err?.message || "Deposit failed" };
-    }
-  }
-
-  async spendUnified(amount: string, recipient: string, targetChain: string): Promise<any> {
-    try {
-      const { createUnifiedBalanceKitContext, spend } = await import("@circle-fin/unified-balance-kit");
-      const circleChain = toCircleChain(targetChain);
-      const context = createUnifiedBalanceKitContext();
-      const adapter = await this.createCircleAdapter(targetChain);
-
-      const result = await spend(context, {
-        amount,
-        token: "USDC",
-        from: [{ adapter }],
-        to: { adapter, chain: circleChain, recipientAddress: recipient },
-      });
-
-      return result;
-    } catch (err: any) {
-      return { error: err?.message || "Spend failed" };
     }
   }
 

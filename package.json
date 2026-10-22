@@ -1,6 +1,6 @@
 {
   "name": "@tamago-labs/wayfind-mcp",
-  "version": "1.5.5",
+  "version": "2.0.0",
   "main": "dist/index.js",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
@@ -18,8 +18,6 @@
     "recover": "tsx scripts/recover-wallet.ts"
   },
   "dependencies": {
-    "@circle-fin/adapter-ethers-v6": "^1.12.1",
-    "@circle-fin/unified-balance-kit": "^1.8.0",
     "@modelcontextprotocol/sdk": "^1.10.2",
     "@solana/kit": "^3.0.3",
     "bip39": "^3.1.0",
