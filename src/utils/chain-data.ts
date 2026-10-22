@@ -1,5 +1,8 @@
-import { readFileSync } from "fs";
-import { join } from "path";
+import arbitrumMainnet from "../data/chains/arbitrum-mainnet.json";
+import arcTestnet from "../data/chains/arc-testnet.json";
+import bnbMainnet from "../data/chains/bnb-mainnet.json";
+import ethereumMainnet from "../data/chains/ethereum-mainnet.json";
+import ethereumTestnet from "../data/chains/ethereum-testnet.json";
 
 export interface ChainToken {
   symbol: string;
@@ -16,17 +19,14 @@ export interface ChainData {
   tokens: ChainToken[];
 }
 
+const CHAIN_CONFIGS: Record<string, ChainData> = {
+  "arbitrum-mainnet": arbitrumMainnet,
+  "arc-testnet": arcTestnet,
+  "bnb-mainnet": bnbMainnet,
+  "ethereum-mainnet": ethereumMainnet,
+  "ethereum-testnet": ethereumTestnet,
+};
+
 export function loadChainData(network: string): ChainData[] {
-  const chains = ["ethereum", "base", "arbitrum", "polygon", "avalanche", "optimism", "world", "sei", "arc"];
-  const result: ChainData[] = [];
-  for (const chain of chains) {
-    try {
-      const file = join(process.cwd(), "src", "data", "chains", `${chain}-${network}.json`);
-      const data = JSON.parse(readFileSync(file, "utf-8"));
-      if (data.tokens.length > 0) {
-        result.push(data);
-      }
-    } catch {}
-  }
-  return result;
+  return Object.values(CHAIN_CONFIGS).filter((c) => c.network === network);
 }

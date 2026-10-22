@@ -475,14 +475,9 @@ export class Agent {
     const explorers: Record<string, Record<string, string>> = {
       solana: { mainnet: "https://explorer.solana.com/tx/", testnet: "https://explorer.solana.com/tx/" },
       ethereum: { mainnet: "https://etherscan.io/tx/", testnet: "https://sepolia.etherscan.io/tx/" },
-      base: { mainnet: "https://basescan.org/tx/", testnet: "https://sepolia.basescan.org/tx/" },
       arbitrum: { mainnet: "https://arbiscan.io/tx/", testnet: "https://sepolia.arbiscan.io/tx/" },
-      polygon: { mainnet: "https://polygonscan.com/tx/", testnet: "https://amoy.polygonscan.com/tx/" },
-      avalanche: { mainnet: "https://snowtrace.io/tx/", testnet: "https://testnet.snowtrace.io/tx/" },
-      optimism: { mainnet: "https://optimistic.etherscan.io/tx/", testnet: "https://sepolia-optimism.etherscan.io/tx/" },
-      world: { mainnet: "https://worldchain.blockscout.com/tx/", testnet: "https://worldchain-sepolia.blockscout.com/tx/" },
-      sei: { mainnet: "https://seistream.app/tx/", testnet: "https://seistream.app/tx/" },
-      arc: { mainnet: "https://explorer.arc.io/tx/", testnet: "https://explorer.testnet.arc.io/tx/" },
+      bnb: { mainnet: "https://bscscan.com/tx/", testnet: "" },
+      arc: { mainnet: "", testnet: "https://explorer.testnet.arc.io/tx/" },
     };
     const base = explorers[chain]?.[network] || "";
     if (chain === "solana" && network === "testnet") return `${base}${hash}?cluster=devnet`;

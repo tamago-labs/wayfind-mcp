@@ -45,22 +45,15 @@ The server uses built-in RPC pools per network (set via `WAYFIND_NETWORK`, defau
 | Solana | `api.devnet.solana.com` |
 | Arc | `rpc.testnet.arc.io` |
 | Ethereum | `ethereum-sepolia-rpc.publicnode.com` |
-| Base | `sepolia.base.org`, `base-sepolia-rpc.publicnode.com` |
 
 **Mainnet:**
 
 | Chain | RPC |
 |-------|-----|
 | Solana | `api.mainnet-beta.solana.com` |
-| Arc | `rpc.mainnet.arc.io` |
 | Ethereum | `singapore.rpc.blxrbdn.com`, `0xrpc.io/eth` |
-| Base | `mainnet.base.org`, `8453.rpc.thirdweb.com` |
 | Arbitrum | `arb1.arbitrum.io/rpc`, `arb-one-mainnet.gateway.tatum.io` |
-| Polygon | `public.1rpc.io/matic`, `polygon.gateway.tenderly.co` |
-| Avalanche | `avalanche-c-chain-rpc.publicnode.com`, `rpc.swiftnodes.io/rpc/avalanche` |
-| Optimism | `mainnet.optimism.io`, `optimism.drpc.org` |
-| World | `worldchain-mainnet.gateway.tenderly.co`, `worldchain-mainnet.g.alchemy.com/public` |
-| Sei | `evm-rpc.sei-apis.com`, `1329.rpc.thirdweb.com` |
+| BNB | `bsc-dataseed.bnbchain.org`, `bsc-dataseed1.defibit.io` |
 
 Switch to mainnet:
 

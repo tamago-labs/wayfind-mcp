@@ -6,7 +6,7 @@ export const SendTokensTool: McpTool = {
   name: "send_tokens",
   description: "Send native and token assets (SOL, SPL tokens on Solana; native + ERC-20 on EVM chains). Returns the transaction signature.",
   schema: {
-    chain: z.string().describe("Chain name (e.g., 'solana', 'ethereum', 'base', 'arbitrum', 'arc')"),
+    chain: z.string().describe("Chain name (e.g., 'solana', 'ethereum', 'arbitrum', 'arc')"),
     token: z.string().describe("Token symbol (e.g., 'SOL', 'USDC', 'ETH', 'EURC')"),
     amount: z.string().describe("Amount to send (in base units/lamports)"),
     recipient: z.string().describe("Recipient wallet address"),

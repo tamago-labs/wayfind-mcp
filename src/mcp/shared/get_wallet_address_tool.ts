@@ -7,19 +7,12 @@ const CHAIN_IDS: Record<string, Record<string, string | number>> = {
     solana: "devnet",
     arc: 5042002,
     ethereum: 11155111,
-    base: 84532,
   },
   mainnet: {
     solana: "mainnet-beta",
-    arc: 5042,
     ethereum: 1,
-    base: 8453,
     arbitrum: 42161,
-    polygon: 137,
-    avalanche: 43114,
-    optimism: 10,
-    world: 480,
-    sei: 1329,
+    bnb: 56,
   },
 };
 

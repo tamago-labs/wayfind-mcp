@@ -24,41 +24,25 @@ const RPC_POOLS: Record<Network, RpcPool> = {
     evm: {
       arc: ["https://rpc.testnet.arc.io"],
       ethereum: ["https://ethereum-sepolia-rpc.publicnode.com"],
-      base: ["https://sepolia.base.org", "https://base-sepolia-rpc.publicnode.com"],
-    },
+      },
   },
   mainnet: {
     solana: [
       "https://api.mainnet-beta.solana.com"
     ],
     evm: {
-      arc: ["https://rpc.mainnet.arc.io"],
       ethereum: [
         "https://singapore.rpc.blxrbdn.com",
         "https://0xrpc.io/eth",
-      ],
-      base: [
-        "https://mainnet.base.org",
-        "https://8453.rpc.thirdweb.com",
       ],
       arbitrum: [
         "https://arb1.arbitrum.io/rpc",
         "https://arb-one-mainnet.gateway.tatum.io",
       ],
-      polygon: [
-        "https://public.1rpc.io/matic",
-        "https://polygon.gateway.tenderly.co",
+      bnb: [
+        "https://bsc-dataseed.bnbchain.org",
+        "https://bsc-dataseed1.defibit.io",
       ],
-      avalanche: [
-        "https://avalanche-c-chain-rpc.publicnode.com",
-        "https://rpc.swiftnodes.io/rpc/avalanche",
-      ],
-      optimism: [
-        "https://mainnet.optimism.io",
-        "https://optimism.drpc.org",
-      ],
-      world: ["https://worldchain-mainnet.gateway.tenderly.co", "https://worldchain-mainnet.g.alchemy.com/public"],
-      sei: ["https://evm-rpc.sei-apis.com", "https://1329.rpc.thirdweb.com"],
     },
   },
 };
