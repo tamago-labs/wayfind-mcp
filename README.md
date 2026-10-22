@@ -2,17 +2,17 @@
 
 ![NPM Version](https://img.shields.io/npm/v/@tamago-labs/wayfind-mcp)
 
-**Wayfind MCP** is a Model Context Protocol server for multi-chain DeFi operations, tokenized stock data, and Circle Unified Balance. It provides wallet management, token transfers, Solana swaps, USDC cross-chain deposit/spend, and risk intelligence across **Solana** and **EVM** chains.
+**Wayfind MCP** is a Model Context Protocol server for **tokenized stocks** on Solana and EVM chains. It provides real-time stock data, market overviews, portfolio risk analysis, plus wallet management and token transfers across **Solana**, **Ethereum**, **Arbitrum**, and **BNB**.
 
 ## Features
 
-- **10 MCP tools** covering wallet management, balances, transfers, market data, risk analysis, and token swaps
-- **Multi-chain agentic wallet** — single encrypted seed derives Solana and EVM keypairs across all supported chains
-- **Multi-chain balances** — query SOL + SPL tokens, ETH/native + ERC-20 across 10 chains
+- **10 MCP tools** covering tokenized stock data, market intelligence, risk analysis, wallet management, balances, transfers, and token swaps
+- **Tokenized stock data** from Wayfind API — prices, market overview, gainers, losers, trending
+- **Risk portfolio analysis** — user risk profiles with factor breakdowns
+- **Multi-chain agentic wallet** — single encrypted seed derives Solana and EVM keypairs
+- **Multi-chain balances** — query SOL + SPL tokens, ETH/native + ERC-20
 - **Multi-chain transfers** — send native tokens and SPL/ERC-20 tokens to any address
 - **OKX DEX integration** for swap quotes and end-to-end token swaps (Solana mainnet)
-- **Tokenized stock data** from Wayfind API — prices, market overview
-- **Risk portfolio analysis** — user risk profiles with factor breakdowns
 - **Encrypted wallet** — seed encrypted at rest using PBKDF2-SHA256 (100k iterations) + libsodium secretbox
 - **BIP39 mnemonic backup** — 12-word mnemonic stored separately in `~/.wayfind/BACKUP_AND_REMOVE.txt` for recovery
 
@@ -137,7 +137,7 @@ Add to `~/.config/opencode/opencode.jsonc`:
 
 ## Available Tools
 
-### Wallet & Balances
+### Tokenized Stocks
 
 | Tool Name | Description | Example Prompt |
 |-----------|-------------|----------------|
@@ -167,14 +167,24 @@ Add to `~/.config/opencode/opencode.jsonc`:
 |-----------|-------------|----------------|
 | `wayfind_get_risk_profile` | Get the risk profile created from the Wayfind dashboard | "Show my risk profile" |
 
+## Wallet Recovery
+
+To recover a wallet from a BIP39 mnemonic phrase:
+
+```bash
+WALLET_PASSKEY="new-passphrase" npx tsx scripts/recover-wallet.ts "your 12 word mnemonic here"
+```
+
 ## Architecture
 
 ```
-mcp/
+wayfind-mcp/
 ├── package.json              # @tamago-labs/wayfind-mcp
 ├── tsconfig.json
 ├── tsup.config.ts            # Build: CJS + ESM + .d.ts
 ├── .gitignore
+├── scripts/
+│   └── recover-wallet.ts     # Wallet recovery from BIP39 mnemonic
 └── src/
     ├── index.ts              # MCP server bootstrap
     ├── config.ts             # Encrypted wallet: PBKDF2 + libsodium secretbox + BIP39, multi-chain RPCs
@@ -235,6 +245,7 @@ The wallet seed is encrypted at rest using Node.js crypto + sodium-native:
 | `bs58` | ^6.0.0 | Base58 encoding |
 | `zod` | ^3.24.3 | Tool parameter schemas |
 | `ws` | ^8.22.0 | WebSocket RPC subscriptions |
+| `tsx` | ^4.19.0 | Recovery script runner |
 
 ## Building
 
